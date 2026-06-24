@@ -1687,7 +1687,7 @@ class GitGraphView {
 
 	private rebaseAction(obj: string, name: string, actionOn: GG.RebaseActionOn, target: DialogTarget & (CommitTarget | RefTarget)) {
 		dialog.showForm('Are you sure you want to rebase ' + (this.gitBranchHead !== null ? '<b><i>' + escapeHtml(this.gitBranchHead) + '</i></b> (the current branch)' : 'the current branch') + ' on ' + actionOn.toLowerCase() + ' <b><i>' + escapeHtml(name) + '</i></b>?', [
-			{ type: DialogInputType.Checkbox, name: 'Launch Interactive Rebase in new Terminal', value: this.config.dialogDefaults.rebase.interactive },
+			{ type: DialogInputType.Checkbox, name: 'Launch Interactive Rebase in VS Code Editor', value: this.config.dialogDefaults.rebase.interactive },
 			{ type: DialogInputType.Checkbox, name: 'Ignore Date', value: this.config.dialogDefaults.rebase.ignoreDate, info: 'Only applicable to a non-interactive rebase.' }
 		], 'Yes, rebase', (values) => {
 			let interactive = <boolean>values[0];
@@ -3351,11 +3351,7 @@ window.addEventListener('load', () => {
 				break;
 			case 'rebase':
 				if (msg.error === null) {
-					if (msg.interactive) {
-						dialog.closeActionRunning();
-					} else {
-						gitGraph.refresh(false);
-					}
+					gitGraph.refresh(false);
 				} else {
 					dialog.showError('Unable to Rebase current branch on ' + msg.actionOn, msg.error, null, null);
 				}

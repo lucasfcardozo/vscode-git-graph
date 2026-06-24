@@ -5904,73 +5904,77 @@ describe('DataSource', () => {
 			expect(result).toBe('error message');
 		});
 
-		it('Should launch the interactive rebase of the current branch on a branch in a terminal', async () => {
+		it('Should launch the interactive rebase of the current branch on a branch in the VS Code editor', async () => {
 			// Setup
-			jest.useFakeTimers();
-			const spyOnOpenGitTerminal = jest.spyOn(utils, 'openGitTerminal');
-			spyOnOpenGitTerminal.mockReturnValueOnce();
+			mockGitSuccessOnce(
+				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0000Commit Message 1\n' +
+				'2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c\u0000Commit Message 2\n'
+			);
+			mockGitSuccessOnce();
+			vscode.window.showInformationMessage.mockResolvedValueOnce('Start Rebase');
 			vscode.mockExtensionSettingReturnValue('repository.sign.commits', false);
 
 			// Run
-			const resultPromise = dataSource.rebase('/path/to/repo', 'develop', RebaseActionOn.Branch, false, true);
-
-			// Assert
-			expect(setTimeout).toHaveBeenCalledWith(expect.anything(), 1000);
-
-			// Run
-			jest.runOnlyPendingTimers();
-			jest.useRealTimers();
-			const result = await resultPromise;
+			const result = await dataSource.rebase('/path/to/repo', 'develop', RebaseActionOn.Branch, false, true);
 
 			// Assert
 			expect(result).toBe(null);
-			expect(spyOnOpenGitTerminal).toBeCalledWith('/path/to/repo', '/path/to/git', 'rebase --interactive develop', 'Rebase on "develop"');
+			expect(vscode.workspace.openTextDocument).toBeCalled();
+			expect(vscode.window.showTextDocument).toBeCalled();
+			expect(vscode.window.showInformationMessage).toBeCalled();
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['-c', 'log.showSignature=false', 'log', '--reverse', '--format=%H%x00%s', 'develop..HEAD', '--'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['rebase', '--interactive', 'develop'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
-		it('Should launch the interactive rebase of the current branch on a commit in a terminal', async () => {
+		it('Should launch the interactive rebase of the current branch on a commit in the VS Code editor', async () => {
 			// Setup
-			jest.useFakeTimers();
-			const spyOnOpenGitTerminal = jest.spyOn(utils, 'openGitTerminal');
-			spyOnOpenGitTerminal.mockReturnValueOnce();
+			mockGitSuccessOnce(
+				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0000Commit Message 1\n'
+			);
+			mockGitSuccessOnce();
+			vscode.window.showInformationMessage.mockResolvedValueOnce('Start Rebase');
 			vscode.mockExtensionSettingReturnValue('repository.sign.commits', false);
 
 			// Run
-			const resultPromise = dataSource.rebase('/path/to/repo', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', RebaseActionOn.Commit, false, true);
-
-			// Assert
-			expect(setTimeout).toHaveBeenCalledWith(expect.anything(), 1000);
-
-			// Run
-			jest.runOnlyPendingTimers();
-			jest.useRealTimers();
-			const result = await resultPromise;
+			const result = await dataSource.rebase('/path/to/repo', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', RebaseActionOn.Commit, false, true);
 
 			// Assert
 			expect(result).toBe(null);
-			expect(spyOnOpenGitTerminal).toBeCalledWith('/path/to/repo', '/path/to/git', 'rebase --interactive 1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', 'Rebase on "1a2b3c4d"');
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['-c', 'log.showSignature=false', 'log', '--reverse', '--format=%H%x00%s', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b..HEAD', '--'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['rebase', '--interactive', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
-		it('Should launch the interactive rebase of the current branch on a branch in a terminal (signing the new commits)', async () => {
+		it('Should launch the interactive rebase of the current branch on a branch in the VS Code editor (signing the new commits)', async () => {
 			// Setup
-			jest.useFakeTimers();
-			const spyOnOpenGitTerminal = jest.spyOn(utils, 'openGitTerminal');
-			spyOnOpenGitTerminal.mockReturnValueOnce();
+			mockGitSuccessOnce(
+				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0000Commit Message 1\n'
+			);
+			mockGitSuccessOnce();
+			vscode.window.showInformationMessage.mockResolvedValueOnce('Start Rebase');
 			vscode.mockExtensionSettingReturnValue('repository.sign.commits', true);
 
 			// Run
-			const resultPromise = dataSource.rebase('/path/to/repo', 'develop', RebaseActionOn.Branch, false, true);
-
-			// Assert
-			expect(setTimeout).toHaveBeenCalledWith(expect.anything(), 1000);
-
-			// Run
-			jest.runOnlyPendingTimers();
-			jest.useRealTimers();
-			const result = await resultPromise;
+			const result = await dataSource.rebase('/path/to/repo', 'develop', RebaseActionOn.Branch, false, true);
 
 			// Assert
 			expect(result).toBe(null);
-			expect(spyOnOpenGitTerminal).toBeCalledWith('/path/to/repo', '/path/to/git', 'rebase --interactive -S develop', 'Rebase on "develop"');
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['rebase', '--interactive', '-S', 'develop'], expect.objectContaining({ cwd: '/path/to/repo' }));
+		});
+
+		it('Should return an error when the interactive rebase is cancelled', async () => {
+			// Setup
+			mockGitSuccessOnce(
+				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0000Commit Message 1\n'
+			);
+			vscode.window.showInformationMessage.mockResolvedValueOnce(undefined);
+			vscode.mockExtensionSettingReturnValue('repository.sign.commits', false);
+
+			// Run
+			const result = await dataSource.rebase('/path/to/repo', 'develop', RebaseActionOn.Branch, false, true);
+
+			// Assert
+			expect(result).toBe('Interactive rebase cancelled.');
+			expect(spyOnSpawn).toBeCalledTimes(1);
 		});
 
 		it('Should return the "Unable to Find Git" error message when no git executable is known', async () => {

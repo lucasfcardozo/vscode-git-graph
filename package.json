@@ -675,7 +675,7 @@
 				"git-graph.dialog.rebase.launchInteractiveRebase": {
 					"type": "boolean",
 					"default": false,
-					"description": "Default state of the \"Launch Interactive Rebase in new Terminal\" checkbox."
+					"description": "Default state of the \"Launch Interactive Rebase in VS Code Editor\" checkbox."
 				},
 				"git-graph.dialog.resetCurrentBranchToCommit.mode": {
 					"type": "string",

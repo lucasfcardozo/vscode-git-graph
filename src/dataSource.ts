@@ -1,13 +1,14 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import { decode, encodingExists } from 'iconv-lite';
+import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { AskpassEnvironment, AskpassManager } from './askpass/askpassManager';
 import { getConfig } from './config';
 import { Logger } from './logger';
 import { CommitOrdering, DateType, DeepWriteable, ErrorInfo, ErrorInfoExtensionPrefix, GitCommit, GitCommitDetails, GitCommitStash, GitConfigLocation, GitFileChange, GitFileStatus, GitPushBranchMode, GitRepoConfig, GitRepoConfigBranches, GitResetMode, GitSignature, GitSignatureStatus, GitStash, GitTagDetails, MergeActionOn, RebaseActionOn, SquashMessageFormat, TagType, Writeable } from './types';
-import { GitExecutable, GitVersionRequirement, UNABLE_TO_FIND_GIT_MSG, UNCOMMITTED, abbrevCommit, constructIncompatibleGitVersionMessage, doesVersionMeetRequirement, getPathFromStr, getPathFromUri, openGitTerminal, pathWithTrailingSlash, realpath, resolveSpawnOutput, showErrorMessage } from './utils';
+import { GitExecutable, GitVersionRequirement, UNABLE_TO_FIND_GIT_MSG, UNCOMMITTED, constructIncompatibleGitVersionMessage, doesVersionMeetRequirement, getPathFromStr, getPathFromUri, openGitTerminal, pathWithTrailingSlash, realpath, resolveSpawnOutput, showErrorMessage } from './utils';
 import { Disposable } from './utils/disposable';
 import { Event } from './utils/event';
 
@@ -1004,12 +1005,9 @@ export class DataSource extends Disposable {
 	 * @returns The ErrorInfo from the executed command.
 	 */
 	public rebase(repo: string, obj: string, actionOn: RebaseActionOn, ignoreDate: boolean, interactive: boolean) {
+		void actionOn;
 		if (interactive) {
-			return this.openGitTerminal(
-				repo,
-				'rebase --interactive ' + (getConfig().signCommits ? '-S ' : '') + (actionOn === RebaseActionOn.Branch ? obj.replace(/'/g, '"\'"') : obj),
-				'Rebase on "' + (actionOn === RebaseActionOn.Branch ? obj : abbrevCommit(obj)) + '"'
-			);
+			return this.rebaseInteractiveInEditor(repo, obj);
 		} else {
 			const args = ['rebase', obj];
 			if (ignoreDate) {
@@ -1020,6 +1018,175 @@ export class DataSource extends Disposable {
 			}
 			return this.runGitCommand(args, repo);
 		}
+	}
+
+	/**
+	 * Launch an interactive rebase workflow in the Visual Studio Code editor.
+	 * @param repo The path of the repository.
+	 * @param obj The object the current branch will be rebased onto.
+	 * @param actionOn Is the rebase on a branch or commit.
+	 * @returns The ErrorInfo from the executed command.
+	 */
+	private async rebaseInteractiveInEditor(repo: string, obj: string): Promise<ErrorInfo> {
+		let tmpDir: string | null = null;
+		try {
+			const todoEntries = await this.getInteractiveRebaseTodoEntries(repo, obj);
+			if (todoEntries.length === 0) {
+				return 'There are no commits to rebase.';
+			}
+
+			tmpDir = await this.mkdtemp(path.join(os.tmpdir(), 'git-graph-rebase-'));
+			const todoPath = path.join(tmpDir, 'git-rebase-todo');
+			const sequenceEditorPath = path.join(tmpDir, 'sequence-editor.js');
+
+			const todoFileContent = [
+				'# Git Graph Interactive Rebase Plan',
+				'# Edit actions (pick, reword, edit, squash, fixup, drop) and reorder lines before continuing.',
+				'# Lines starting with # are ignored.',
+				...todoEntries,
+				''
+			].join('\n');
+			await this.writeFile(todoPath, todoFileContent);
+
+			await this.writeFile(sequenceEditorPath, [
+				'const fs = require("fs");',
+				'const source = process.argv[2];',
+				'const target = process.argv[3];',
+				'if (!source || !target) {',
+				'\tprocess.exit(1);',
+				'}',
+				'fs.copyFileSync(source, target);'
+			].join('\n'));
+
+			const todoDoc = await vscode.workspace.openTextDocument(vscode.Uri.file(todoPath));
+			await vscode.window.showTextDocument(todoDoc, { preview: false });
+
+			const startAction = 'Start Rebase';
+			const selection = await vscode.window.showInformationMessage(
+				'Review and save the interactive rebase plan in the editor, then start the rebase.',
+				{ modal: true },
+				startAction
+			);
+			if (selection !== startAction) {
+				return 'Interactive rebase cancelled.';
+			}
+
+			let doc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === todoDoc.uri.toString()) || todoDoc;
+			if (doc.isDirty && !(await doc.save())) {
+				return 'Unable to save the interactive rebase plan.';
+			}
+
+			const updatedTodo = await this.readFile(todoPath);
+			const hasActionLine = updatedTodo.split(EOL_REGEX)
+				.some((line: string) => {
+					const trimmed = line.trim();
+					return trimmed !== '' && !trimmed.startsWith('#');
+				});
+			if (!hasActionLine) {
+				return 'The interactive rebase plan is empty.';
+			}
+
+			const args = ['rebase', '--interactive'];
+			if (getConfig().signCommits) {
+				args.push('-S');
+			}
+			args.push(obj);
+
+			const sequenceEditorCommand = '"' + process.execPath.replace(/"/g, '\\"') + '" "' + sequenceEditorPath.replace(/"/g, '\\"') + '" "' + todoPath.replace(/"/g, '\\"') + '"';
+			return await this.runGitCommand(args, repo, {
+				GIT_SEQUENCE_EDITOR: sequenceEditorCommand
+			});
+		} catch (error) {
+			return typeof error === 'string' ? error : 'Unable to launch interactive rebase in the editor.';
+		} finally {
+			if (tmpDir !== null) {
+				await this.cleanupInteractiveRebaseTmpDir(tmpDir);
+			}
+		}
+	}
+
+	/**
+	 * Create a temporary directory.
+	 * @param prefix The directory prefix.
+	 * @returns A promise resolving to the created directory path.
+	 */
+	private mkdtemp(prefix: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			fs.mkdtemp(prefix, (err, folder) => err ? reject(err) : resolve(folder));
+		});
+	}
+
+	/**
+	 * Write a UTF-8 file.
+	 * @param filePath The file path.
+	 * @param content The file contents.
+	 */
+	private writeFile(filePath: string, content: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			fs.writeFile(filePath, content, 'utf8', (err) => err ? reject(err) : resolve());
+		});
+	}
+
+	/**
+	 * Read a UTF-8 file.
+	 * @param filePath The file path.
+	 */
+	private readFile(filePath: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			fs.readFile(filePath, 'utf8', (err, data) => err ? reject(err) : resolve(data));
+		});
+	}
+
+	/**
+	 * Delete a file if it exists.
+	 * @param filePath The file path.
+	 */
+	private unlinkIfExists(filePath: string): Promise<void> {
+		return new Promise((resolve) => {
+			fs.unlink(filePath, () => resolve());
+		});
+	}
+
+	/**
+	 * Remove a directory if it exists.
+	 * @param dirPath The directory path.
+	 */
+	private rmdirIfExists(dirPath: string): Promise<void> {
+		return new Promise((resolve) => {
+			fs.rmdir(dirPath, () => resolve());
+		});
+	}
+
+	/**
+	 * Clean up temporary interactive rebase files.
+	 * @param dirPath The temporary directory path.
+	 */
+	private async cleanupInteractiveRebaseTmpDir(dirPath: string): Promise<void> {
+		await this.unlinkIfExists(path.join(dirPath, 'git-rebase-todo'));
+		await this.unlinkIfExists(path.join(dirPath, 'sequence-editor.js'));
+		await this.rmdirIfExists(dirPath);
+	}
+
+	/**
+	 * Get the default todo entries for an interactive rebase operation.
+	 * @param repo The path of the repository.
+	 * @param obj The object the current branch will be rebased onto.
+	 * @returns An array of interactive rebase todo entries.
+	 */
+	private getInteractiveRebaseTodoEntries(repo: string, obj: string): Promise<string[]> {
+		return this.spawnGit(['-c', 'log.showSignature=false', 'log', '--reverse', '--format=%H%x00%s', obj + '..HEAD', '--'], repo, (stdout) => {
+			const lines = stdout.split(EOL_REGEX);
+			const entries: string[] = [];
+			for (let i = 0; i < lines.length; i++) {
+				if (lines[i] === '') continue;
+				const separator = lines[i].indexOf('\u0000');
+				if (separator < 1) continue;
+				const hash = lines[i].substring(0, separator);
+				const subject = lines[i].substring(separator + 1);
+				entries.push('pick ' + hash + ' ' + subject);
+			}
+			return entries;
+		});
 	}
 
 
@@ -1794,8 +1961,8 @@ export class DataSource extends Disposable {
 	 * @param repo The repository to run the command in.
 	 * @returns The returned ErrorInfo (suitable for being sent to the Git Graph View).
 	 */
-	private runGitCommand(args: string[], repo: string): Promise<ErrorInfo> {
-		return this._spawnGit(args, repo, () => null).catch((errorMessage: string) => errorMessage);
+	private runGitCommand(args: string[], repo: string, extraEnv?: NodeJS.ProcessEnv): Promise<ErrorInfo> {
+		return this._spawnGit(args, repo, () => null, false, extraEnv).catch((errorMessage: string) => errorMessage);
 	}
 
 	/**
@@ -1815,7 +1982,7 @@ export class DataSource extends Disposable {
 	 * @param resolveValue A callback invoked to resolve the data from `stdout` and `stderr`.
 	 * @param ignoreExitCode Ignore the exit code returned by Git (default: `FALSE`).
 	 */
-	private _spawnGit<T>(args: string[], repo: string, resolveValue: { (stdout: Buffer, stderr: string): T }, ignoreExitCode: boolean = false) {
+	private _spawnGit<T>(args: string[], repo: string, resolveValue: { (stdout: Buffer, stderr: string): T }, ignoreExitCode: boolean = false, extraEnv?: NodeJS.ProcessEnv) {
 		return new Promise<T>((resolve, reject) => {
 			if (this.gitExecutable === null) {
 				return reject(UNABLE_TO_FIND_GIT_MSG);
@@ -1823,7 +1990,7 @@ export class DataSource extends Disposable {
 
 			resolveSpawnOutput(cp.spawn(this.gitExecutable.path, args, {
 				cwd: repo,
-				env: Object.assign({}, process.env, this.askpassEnv)
+				env: Object.assign({}, process.env, this.askpassEnv, extraEnv || {})
 			})).then((values) => {
 				const status = values[0], stdout = values[1], stderr = values[2];
 				if (status.code === 0 || ignoreExitCode) {
