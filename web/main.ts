@@ -161,6 +161,20 @@ class GitGraphView {
 				name: this.gitRepos[this.currentRepo].name || getRepoName(this.currentRepo)
 			}, 'Opening Terminal');
 		});
+
+		const continueRebaseBtn = document.getElementById('continueRebaseBtn'), abortRebaseBtn = document.getElementById('abortRebaseBtn');
+		if (continueRebaseBtn) {
+			continueRebaseBtn.addEventListener('click', () => {
+				runAction({ command: 'continueRebase', repo: this.currentRepo }, 'Continue Rebase');
+			});
+		}
+		if (abortRebaseBtn) {
+			abortRebaseBtn.addEventListener('click', () => {
+				dialog.showConfirmation('Are you sure you want to abort the rebase in progress?', 'Yes, abort', () => {
+					runAction({ command: 'abortRebase', repo: this.currentRepo }, 'Abort Rebase');
+				}, null);
+			});
+		}
 	}
 
 
@@ -466,6 +480,8 @@ class GitGraphView {
 			if (refreshState.inProgress && refreshState.loadRepoInfoRefreshId === msg.refreshId) {
 				this.loadRepoInfo(msg.branches, msg.head, msg.remotes, msg.stashes, msg.isRepo);
 			}
+			const banner = document.getElementById('rebase-banner');
+			if (banner) banner.style.display = msg.rebaseInProgress ? 'flex' : 'none';
 		} else {
 			this.displayLoadDataError('Unable to load Repository Info', msg.error);
 		}
@@ -1687,10 +1703,10 @@ class GitGraphView {
 
 	private rebaseAction(obj: string, name: string, actionOn: GG.RebaseActionOn, target: DialogTarget & (CommitTarget | RefTarget)) {
 		dialog.showForm('Are you sure you want to rebase ' + (this.gitBranchHead !== null ? '<b><i>' + escapeHtml(this.gitBranchHead) + '</i></b> (the current branch)' : 'the current branch') + ' on ' + actionOn.toLowerCase() + ' <b><i>' + escapeHtml(name) + '</i></b>?', [
-			{ type: DialogInputType.Checkbox, name: 'Launch Interactive Rebase in new Terminal', value: this.config.dialogDefaults.rebase.interactive },
-			{ type: DialogInputType.Checkbox, name: 'Ignore Date', value: this.config.dialogDefaults.rebase.ignoreDate, info: 'Only applicable to a non-interactive rebase.' }
+			{ type: DialogInputType.Checkbox, name: 'Interactive Rebase', value: this.config.dialogDefaults.rebase.interactive, description: 'Opens the Interactive Rebase editor to reorder, edit, squash, fixup or drop commits before they are applied.' },
+			{ type: DialogInputType.Checkbox, name: 'Ignore Date', value: this.config.dialogDefaults.rebase.ignoreDate, description: 'Rewrites the committer date of each rebased commit to the current time. Has no effect on an Interactive Rebase.', disabledWhenCheckboxChecked: 0 }
 		], 'Yes, rebase', (values) => {
-			let interactive = <boolean>values[0];
+			const interactive = <boolean>values[0];
 			runAction({ command: 'rebase', repo: this.currentRepo, obj: obj, actionOn: actionOn, ignoreDate: <boolean>values[1], interactive: interactive }, interactive ? 'Launching Interactive Rebase' : 'Rebasing on ' + actionOn);
 		}, target);
 	}
@@ -3192,6 +3208,9 @@ window.addEventListener('load', () => {
 	window.addEventListener('message', event => {
 		const msg: GG.ResponseMessage = event.data;
 		switch (msg.command) {
+			case 'abortRebase':
+				refreshOrDisplayError(msg.error, 'Unable to Abort Rebase');
+				break;
 			case 'addRemote':
 				refreshOrDisplayError(msg.error, 'Unable to Add Remote', true);
 				break;
@@ -3205,6 +3224,13 @@ window.addEventListener('load', () => {
 				break;
 			case 'applyStash':
 				refreshOrDisplayError(msg.error, 'Unable to Apply Stash');
+				break;
+			case 'continueRebase':
+				if (msg.error !== null && msg.error.includes('needs merge')) {
+					dialog.showError('Rebase Paused \u2014 Merge Conflicts', msg.error + '\nResolve the conflicts, stage the files with git add, then click Continue again.', null, null);
+				} else {
+					refreshOrDisplayError(msg.error, 'Unable to Continue Rebase');
+				}
 				break;
 			case 'branchFromStash':
 				refreshOrDisplayError(msg.error, 'Unable to Create Branch from Stash');
@@ -3351,11 +3377,7 @@ window.addEventListener('load', () => {
 				break;
 			case 'rebase':
 				if (msg.error === null) {
-					if (msg.interactive) {
-						dialog.closeActionRunning();
-					} else {
-						gitGraph.refresh(false);
-					}
+					gitGraph.refresh(false);
 				} else {
 					dialog.showError('Unable to Rebase current branch on ' + msg.actionOn, msg.error, null, null);
 				}

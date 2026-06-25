@@ -156,7 +156,7 @@ export enum ViewColumn {
 	Nine = 9
 }
 
-export const window = {
+export const window: any = {
 	activeTextEditor: undefined as any,
 	createOutputChannel: jest.fn(() => mocks.outputChannel),
 	createStatusBarItem: jest.fn(() => mocks.statusBarItem),
@@ -164,6 +164,10 @@ export const window = {
 	createTerminal: jest.fn(() => mocks.terminal),
 	showErrorMessage: jest.fn(),
 	showInformationMessage: jest.fn(),
+	showTextDocument: jest.fn((document) => {
+		window.activeTextEditor = { document: document, viewColumn: ViewColumn.One };
+		return Promise.resolve(window.activeTextEditor);
+	}),
 	showOpenDialog: jest.fn(),
 	showQuickPick: jest.fn(),
 	showSaveDialog: jest.fn()
@@ -176,9 +180,20 @@ export const workspace = {
 		onDidDelete: jest.fn(),
 		dispose: jest.fn()
 	})),
+	openTextDocument: jest.fn((uriOrPath: any) => {
+		const uri = typeof uriOrPath === 'string' ? Uri.file(uriOrPath) : uriOrPath;
+		const document = {
+			uri: uri,
+			isDirty: false,
+			save: jest.fn(() => Promise.resolve(true))
+		};
+		workspace.textDocuments.push(document as any);
+		return Promise.resolve(document as any);
+	}),
 	getConfiguration: jest.fn(() => mocks.workspaceConfiguration),
 	onDidChangeWorkspaceFolders: jest.fn((_: () => Promise<void>) => ({ dispose: jest.fn() })),
 	onDidCloseTextDocument: jest.fn((_: () => void) => ({ dispose: jest.fn() })),
+	textDocuments: [] as any[],
 	workspaceFolders: <{ uri: Uri, index: number }[] | undefined>undefined
 };
 
@@ -247,6 +262,9 @@ beforeEach(() => {
 		},
 		viewColumn: ViewColumn.One
 	};
+
+	window.showInformationMessage.mockResolvedValue(undefined);
+	workspace.textDocuments = [];
 
 	// Clear any mocked extension setting values before each test
 	Object.keys(mockedExtensionSettingValues).forEach((section) => {

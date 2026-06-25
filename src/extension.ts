@@ -9,6 +9,7 @@ import { onStartUp } from './life-cycle/startup';
 import { Logger } from './logger';
 import { RepoManager } from './repoManager';
 import { StatusBarItem } from './statusBarItem';
+import { InteractiveRebasePanel } from './interactiveRebase';
 import { GitExecutable, UNABLE_TO_FIND_GIT_MSG, findGit, getGitExecutableFromPaths, showErrorMessage, showInformationMessage } from './utils';
 import { EventEmitter } from './utils/event';
 
@@ -80,6 +81,25 @@ export async function activate(context: vscode.ExtensionContext) {
 		logger
 	);
 	logger.log('Started Git Graph - Ready to use!');
+
+	// Intercept `git rebase -i` when git opens git-rebase-todo in VS Code
+	// (requires `core.editor = code --wait` in .gitconfig).
+	// When the file is detected, we open our visual panel instead of the raw text editor.
+	const GIT_REBASE_TODO_REGEX = /[/\\]\.git[/\\]rebase-merge[/\\]git-rebase-todo$/;
+	context.subscriptions.push(
+		vscode.window.onDidChangeActiveTextEditor(async (editor) => {
+			if (!editor) return;
+			const filePath = editor.document.uri.fsPath;
+			if (!GIT_REBASE_TODO_REGEX.test(filePath)) return;
+
+			// Keep the document open (tab stays alive = `code --wait` process alive).
+			// Our panel will close it after writing the modified todo file.
+			const error = await InteractiveRebasePanel.launchFromFile(filePath, dataSource);
+			if (error) {
+				showErrorMessage('Git Graph: ' + error);
+			}
+		})
+	);
 
 	extensionState.expireOldCodeReviews();
 	onStartUp(context).catch(() => { });

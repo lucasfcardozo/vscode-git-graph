@@ -1,13 +1,14 @@
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import { decode, encodingExists } from 'iconv-lite';
+import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { AskpassEnvironment, AskpassManager } from './askpass/askpassManager';
 import { getConfig } from './config';
 import { Logger } from './logger';
 import { CommitOrdering, DateType, DeepWriteable, ErrorInfo, ErrorInfoExtensionPrefix, GitCommit, GitCommitDetails, GitCommitStash, GitConfigLocation, GitFileChange, GitFileStatus, GitPushBranchMode, GitRepoConfig, GitRepoConfigBranches, GitResetMode, GitSignature, GitSignatureStatus, GitStash, GitTagDetails, MergeActionOn, RebaseActionOn, SquashMessageFormat, TagType, Writeable } from './types';
-import { GitExecutable, GitVersionRequirement, UNABLE_TO_FIND_GIT_MSG, UNCOMMITTED, abbrevCommit, constructIncompatibleGitVersionMessage, doesVersionMeetRequirement, getPathFromStr, getPathFromUri, openGitTerminal, pathWithTrailingSlash, realpath, resolveSpawnOutput, showErrorMessage } from './utils';
+import { GitExecutable, GitVersionRequirement, UNABLE_TO_FIND_GIT_MSG, UNCOMMITTED, constructIncompatibleGitVersionMessage, doesVersionMeetRequirement, getPathFromStr, getPathFromUri, openGitTerminal, pathWithTrailingSlash, realpath, resolveSpawnOutput, showErrorMessage } from './utils';
 import { Disposable } from './utils/disposable';
 import { Event } from './utils/event';
 
@@ -1003,13 +1004,22 @@ export class DataSource extends Disposable {
 	 * @param interactive Should the rebase be performed interactively.
 	 * @returns The ErrorInfo from the executed command.
 	 */
+	public checkRebaseInProgress(repo: string): boolean {
+		return fs.existsSync(path.join(repo, '.git', 'rebase-merge')) || fs.existsSync(path.join(repo, '.git', 'rebase-apply'));
+	}
+
+	public continueRebase(repo: string): Promise<ErrorInfo> {
+		return this._spawnGit(['rebase', '--continue'], repo, () => null, false, { GIT_EDITOR: 'true', GIT_TERMINAL_PROMPT: '0' }).catch((errorMessage: string) => errorMessage);
+	}
+
+	public abortRebase(repo: string): Promise<ErrorInfo> {
+		return this._spawnGit(['rebase', '--abort'], repo, () => null, false).catch((errorMessage: string) => errorMessage);
+	}
+
 	public rebase(repo: string, obj: string, actionOn: RebaseActionOn, ignoreDate: boolean, interactive: boolean) {
+		void actionOn;
 		if (interactive) {
-			return this.openGitTerminal(
-				repo,
-				'rebase --interactive ' + (getConfig().signCommits ? '-S ' : '') + (actionOn === RebaseActionOn.Branch ? obj.replace(/'/g, '"\'"') : obj),
-				'Rebase on "' + (actionOn === RebaseActionOn.Branch ? obj : abbrevCommit(obj)) + '"'
-			);
+			return this.rebaseInteractiveInEditor(repo, obj);
 		} else {
 			const args = ['rebase', obj];
 			if (ignoreDate) {
@@ -1020,6 +1030,353 @@ export class DataSource extends Disposable {
 			}
 			return this.runGitCommand(args, repo);
 		}
+	}
+
+	/**
+	 * Launch an interactive rebase workflow in the Visual Studio Code editor.
+	 * @param repo The path of the repository.
+	 * @param obj The object the current branch will be rebased onto.
+	 * @param actionOn Is the rebase on a branch or commit.
+	 * @returns The ErrorInfo from the executed command.
+	 */
+	private async rebaseInteractiveInEditor(repo: string, obj: string): Promise<ErrorInfo> {
+		let tmpDir: string | null = null;
+		try {
+			const todoEntries = await this.getInteractiveRebaseTodoEntries(repo, obj);
+			if (todoEntries.length === 0) {
+				return 'There are no commits to rebase.';
+			}
+
+			tmpDir = await this.mkdtemp(path.join(os.tmpdir(), 'git-graph-rebase-'));
+			const todoPath = path.join(tmpDir, 'git-rebase-todo');
+			const sequenceEditorPath = path.join(tmpDir, 'sequence-editor.js');
+
+			const todoFileContent = [
+				'# Git Graph Interactive Rebase Plan',
+				'# Edit actions (pick, reword, edit, squash, fixup, drop) and reorder lines before continuing.',
+				'# Lines starting with # are ignored.',
+				...todoEntries.map((e) => 'pick ' + e.hash + ' ' + e.subject),
+				''
+			].join('\n');
+			await this.writeFile(todoPath, todoFileContent);
+
+			await this.writeFile(sequenceEditorPath, [
+				'const fs = require("fs");',
+				'const source = process.argv[2];',
+				'const target = process.argv[3];',
+				'if (!source || !target) {',
+				'\tprocess.exit(1);',
+				'}',
+				'fs.copyFileSync(source, target);'
+			].join('\n'));
+
+			const todoDoc = await vscode.workspace.openTextDocument(vscode.Uri.file(todoPath));
+			await vscode.window.showTextDocument(todoDoc, { preview: false });
+
+			const startAction = 'Start Rebase';
+			const selection = await vscode.window.showInformationMessage(
+				'Review and save the interactive rebase plan in the editor, then start the rebase.',
+				{ modal: true },
+				startAction
+			);
+			if (selection !== startAction) {
+				return 'Interactive rebase cancelled.';
+			}
+
+			let doc = vscode.workspace.textDocuments.find((d) => d.uri.toString() === todoDoc.uri.toString()) || todoDoc;
+			if (doc.isDirty && !(await doc.save())) {
+				return 'Unable to save the interactive rebase plan.';
+			}
+
+			const updatedTodo = await this.readFile(todoPath);
+			const hasActionLine = updatedTodo.split(EOL_REGEX)
+				.some((line: string) => {
+					const trimmed = line.trim();
+					return trimmed !== '' && !trimmed.startsWith('#');
+				});
+			if (!hasActionLine) {
+				return 'The interactive rebase plan is empty.';
+			}
+
+			const args = ['rebase', '--interactive'];
+			if (getConfig().signCommits) {
+				args.push('-S');
+			}
+			args.push(obj);
+
+			const sequenceEditorCommand = '"' + process.execPath.replace(/"/g, '\\"') + '" "' + sequenceEditorPath.replace(/"/g, '\\"') + '" "' + todoPath.replace(/"/g, '\\"') + '"';
+			return await this.runGitCommand(args, repo, {
+				GIT_SEQUENCE_EDITOR: sequenceEditorCommand
+			});
+		} catch (error) {
+			return typeof error === 'string' ? error : 'Unable to launch interactive rebase in the editor.';
+		} finally {
+			if (tmpDir !== null) {
+				await this.cleanupInteractiveRebaseTmpDir(tmpDir);
+			}
+		}
+	}
+
+	/**
+	 * Create a temporary directory.
+	 * @param prefix The directory prefix.
+	 * @returns A promise resolving to the created directory path.
+	 */
+	private mkdtemp(prefix: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			fs.mkdtemp(prefix, (err, folder) => err ? reject(err) : resolve(folder));
+		});
+	}
+
+	/**
+	 * Write a UTF-8 file.
+	 * @param filePath The file path.
+	 * @param content The file contents.
+	 */
+	private writeFile(filePath: string, content: string): Promise<void> {
+		return new Promise((resolve, reject) => {
+			fs.writeFile(filePath, content, 'utf8', (err) => err ? reject(err) : resolve());
+		});
+	}
+
+	/**
+	 * Read a UTF-8 file.
+	 * @param filePath The file path.
+	 */
+	private readFile(filePath: string): Promise<string> {
+		return new Promise((resolve, reject) => {
+			fs.readFile(filePath, 'utf8', (err, data) => err ? reject(err) : resolve(data));
+		});
+	}
+
+	/**
+	 * Delete a file if it exists.
+	 * @param filePath The file path.
+	 */
+	private unlinkIfExists(filePath: string): Promise<void> {
+		return new Promise((resolve) => {
+			fs.unlink(filePath, () => resolve());
+		});
+	}
+
+	/**
+	 * Remove a directory if it exists.
+	 * @param dirPath The directory path.
+	 */
+	private rmdirIfExists(dirPath: string): Promise<void> {
+		return new Promise((resolve) => {
+			fs.rmdir(dirPath, () => resolve());
+		});
+	}
+
+	/**
+	 * Clean up temporary interactive rebase files.
+	 * @param dirPath The temporary directory path.
+	 */
+	private async cleanupInteractiveRebaseTmpDir(dirPath: string): Promise<void> {
+		await this.unlinkIfExists(path.join(dirPath, 'git-rebase-todo'));
+		await this.unlinkIfExists(path.join(dirPath, 'sequence-editor.js'));
+		await this.rmdirIfExists(dirPath);
+	}
+
+	/**
+	 * Get the default todo entries for an interactive rebase operation.
+	 * @param repo The path of the repository.
+	 * @param obj The object the current branch will be rebased onto.
+	 * @returns An array of interactive rebase todo entries.
+	 */
+	/**
+	 * Get the list of commits to be rebased for a visual interactive rebase,
+	 * along with the base (onto) commit for display context.
+	 * @param repo The path of the repository.
+	 * @param obj The object the current branch will be rebased onto.
+	 * @returns The base commit and list of todo entries, or an error string.
+	 */
+	public async getInteractiveRebaseTodos(repo: string, obj: string): Promise<InteractiveRebaseData | string> {
+		try {
+			const [base, entries] = await Promise.all([
+				this.getBaseCommitEntry(repo, obj),
+				this.getInteractiveRebaseTodoEntries(repo, obj)
+			]);
+			return { base, entries };
+		} catch (e: unknown) {
+			return typeof e === 'string' ? e : 'Unable to get commits for interactive rebase.';
+		}
+	}
+
+	/**
+	 * Parse an existing git-rebase-todo file and enrich entries with author/date from git log.
+	 * Used when intercepting a `git rebase -i` launched from the terminal.
+	 * @param todoFilePath Absolute path to the git-rebase-todo file.
+	 * @returns Parsed and enriched rebase data, or an error string.
+	 */
+	public async getInteractiveRebaseTodosFromFile(todoFilePath: string): Promise<InteractiveRebaseData | string> {
+		try {
+			const repoPath = todoFilePath.replace(/[/\\]\.git[/\\]rebase-merge[/\\]git-rebase-todo$/, '');
+
+			const content = fs.readFileSync(todoFilePath, 'utf8');
+			const ACTION_MAP: { [key: string]: string } = { p: 'pick', r: 'reword', e: 'edit', s: 'squash', f: 'fixup', d: 'drop' };
+			const VALID_LONG = new Set(['pick', 'reword', 'edit', 'squash', 'fixup', 'drop']);
+
+			const rawEntries: { action: string; hash: string; subject: string }[] = [];
+			for (const line of content.split(/\r?\n/)) {
+				const trimmed = line.trim();
+				if (!trimmed || trimmed.startsWith('#')) continue;
+				const parts = trimmed.split(/\s+/);
+				if (parts.length < 2) continue;
+				const action = ACTION_MAP[parts[0]] || parts[0];
+				if (!VALID_LONG.has(action)) continue;
+				rawEntries.push({ action, hash: parts[1], subject: parts.slice(2).join(' ') });
+			}
+			if (rawEntries.length === 0) {
+				return 'No commits found in the interactive rebase todo file.';
+			}
+
+			// Determine base (onto) hash from .git/rebase-merge/onto
+			const ontoFile = path.join(repoPath, '.git', 'rebase-merge', 'onto');
+			const ontoHash = fs.existsSync(ontoFile) ? fs.readFileSync(ontoFile, 'utf8').trim() : rawEntries[0].hash;
+
+			// Determine branch name from .git/rebase-merge/head-name
+			const headNameFile = path.join(repoPath, '.git', 'rebase-merge', 'head-name');
+			const headName = fs.existsSync(headNameFile)
+				? fs.readFileSync(headNameFile, 'utf8').trim().replace(/^refs\/heads\//, '')
+				: '';
+
+			// Enrich entries with author/date from git log
+			const hashes = rawEntries.map((e) => e.hash);
+			const enriched = await this.getCommitDetailsByHashes(repoPath, hashes);
+
+			const entries: InteractiveRebaseTodoEntry[] = rawEntries.map((e) => {
+				const full = enriched[e.hash] || enriched[e.hash.substring(0, 7)];
+				return {
+					hash: full ? full.hash : e.hash,
+					subject: full ? full.subject : e.subject,
+					author: full ? full.author : '',
+					relativeDate: full ? full.relativeDate : ''
+				};
+			});
+
+			const base = await this.getBaseCommitEntry(repoPath, ontoHash);
+
+			return { base, entries, headName: headName || undefined };
+		} catch (e: unknown) {
+			return typeof e === 'string' ? e : 'Unable to parse the interactive rebase todo file.';
+		}
+	}
+
+	/**
+	 * Write modified entries back to a git-rebase-todo file (used in terminal-intercept mode).
+	 * @param todoFilePath Absolute path to the git-rebase-todo file.
+	 * @param entries The ordered entries with their actions.
+	 * @returns null on success, or an error string.
+	 */
+	public writeRebaseTodoFile(todoFilePath: string, entries: ReadonlyArray<{ action: string; hash: string; subject: string }>): ErrorInfo {
+		try {
+			const content = entries.map((e) => e.action + ' ' + e.hash + ' ' + e.subject).join('\n') + '\n';
+			fs.writeFileSync(todoFilePath, content, 'utf8');
+			return null;
+		} catch (e: unknown) {
+			return e instanceof Error ? e.message : 'Unable to write the interactive rebase todo file.';
+		}
+	}
+
+	private async getCommitDetailsByHashes(repo: string, hashes: string[]): Promise<{ [hash: string]: InteractiveRebaseTodoEntry }> {
+		if (hashes.length === 0) return {};
+		return this.spawnGit(
+			['-c', 'log.showSignature=false', 'log', '--no-walk', '--format=%H%x01%s%x01%an%x01%ar', ...hashes, '--'],
+			repo,
+			(stdout) => {
+				const result: { [hash: string]: InteractiveRebaseTodoEntry } = {};
+				stdout.split(/\r?\n/).forEach((line) => {
+					const trimmed = line.trim();
+					if (!trimmed) return;
+					const parts = trimmed.split('\x01');
+					if (!parts[0]) return;
+					const entry: InteractiveRebaseTodoEntry = { hash: parts[0], subject: parts[1] || '', author: parts[2] || '', relativeDate: parts[3] || '' };
+					result[parts[0]] = entry;
+					result[parts[0].substring(0, 7)] = entry;
+				});
+				return result;
+			}
+		).catch(() => ({}));
+	}
+
+	private getBaseCommitEntry(repo: string, obj: string): Promise<InteractiveRebaseTodoEntry> {
+		return this.spawnGit(['-c', 'log.showSignature=false', 'log', '-1', '--format=%H%x01%s%x01%an%x01%ar', obj, '--'], repo, (stdout) => {
+			const line = stdout.trim().split(/\r?\n/)[0] || '';
+			const parts = line.split('\x01');
+			return {
+				hash: parts[0] || obj,
+				subject: parts[1] || obj,
+				author: parts[2] || '',
+				relativeDate: parts[3] || ''
+			};
+		});
+	}
+
+	/**
+	 * Execute an interactive rebase with the given ordered and annotated entries.
+	 * @param repo The path of the repository.
+	 * @param obj The object the current branch will be rebased onto.
+	 * @param entries The interactive rebase entries with their actions.
+	 * @returns The ErrorInfo from the executed command.
+	 */
+	public async rebaseInteractiveWithEntries(repo: string, obj: string, entries: ReadonlyArray<{ action: string; hash: string; subject: string }>): Promise<ErrorInfo> {
+		let tmpDir: string | null = null;
+		try {
+			tmpDir = await this.mkdtemp(path.join(os.tmpdir(), 'git-graph-rebase-'));
+			const todoPath = path.join(tmpDir, 'git-rebase-todo');
+			const sequenceEditorPath = path.join(tmpDir, 'sequence-editor.js');
+
+			const todoContent = entries.map((e) => e.action + ' ' + e.hash + ' ' + e.subject).join('\n') + '\n';
+			await this.writeFile(todoPath, todoContent);
+
+			await this.writeFile(sequenceEditorPath, [
+				'const fs = require("fs");',
+				'const source = process.argv[2];',
+				'const target = process.argv[3];',
+				'if (!source || !target) {',
+				'\tprocess.exit(1);',
+				'}',
+				'fs.copyFileSync(source, target);'
+			].join('\n'));
+
+			const args = ['rebase', '--interactive'];
+			if (getConfig().signCommits) {
+				args.push('-S');
+			}
+			args.push(obj);
+
+			const sequenceEditorCommand = '"' + process.execPath.replace(/"/g, '\\"') + '" "' + sequenceEditorPath.replace(/"/g, '\\"') + '" "' + todoPath.replace(/"/g, '\\"') + '"';
+			return await this.runGitCommand(args, repo, {
+				GIT_SEQUENCE_EDITOR: sequenceEditorCommand
+			});
+		} catch (error) {
+			return typeof error === 'string' ? error : 'Unable to execute interactive rebase.';
+		} finally {
+			if (tmpDir !== null) {
+				await this.cleanupInteractiveRebaseTmpDir(tmpDir);
+			}
+		}
+	}
+
+	private getInteractiveRebaseTodoEntries(repo: string, obj: string): Promise<InteractiveRebaseTodoEntry[]> {
+		return this.spawnGit(['-c', 'log.showSignature=false', 'log', '--reverse', '--format=%H%x01%s%x01%an%x01%ar', obj + '..HEAD', '--'], repo, (stdout) => {
+			const lines = stdout.split(EOL_REGEX);
+			const entries: InteractiveRebaseTodoEntry[] = [];
+			for (let i = 0; i < lines.length; i++) {
+				if (lines[i] === '') continue;
+				const parts = lines[i].split('\x01');
+				if (parts.length < 2 || parts[0].length < 1) continue;
+				entries.push({
+					hash: parts[0],
+					subject: parts[1] || '',
+					author: parts[2] || '',
+					relativeDate: parts[3] || ''
+				});
+			}
+			return entries;
+		});
 	}
 
 
@@ -1794,8 +2151,8 @@ export class DataSource extends Disposable {
 	 * @param repo The repository to run the command in.
 	 * @returns The returned ErrorInfo (suitable for being sent to the Git Graph View).
 	 */
-	private runGitCommand(args: string[], repo: string): Promise<ErrorInfo> {
-		return this._spawnGit(args, repo, () => null).catch((errorMessage: string) => errorMessage);
+	private runGitCommand(args: string[], repo: string, extraEnv?: NodeJS.ProcessEnv): Promise<ErrorInfo> {
+		return this._spawnGit(args, repo, () => null, false, extraEnv).catch((errorMessage: string) => errorMessage);
 	}
 
 	/**
@@ -1815,7 +2172,7 @@ export class DataSource extends Disposable {
 	 * @param resolveValue A callback invoked to resolve the data from `stdout` and `stderr`.
 	 * @param ignoreExitCode Ignore the exit code returned by Git (default: `FALSE`).
 	 */
-	private _spawnGit<T>(args: string[], repo: string, resolveValue: { (stdout: Buffer, stderr: string): T }, ignoreExitCode: boolean = false) {
+	private _spawnGit<T>(args: string[], repo: string, resolveValue: { (stdout: Buffer, stderr: string): T }, ignoreExitCode: boolean = false, extraEnv?: NodeJS.ProcessEnv) {
 		return new Promise<T>((resolve, reject) => {
 			if (this.gitExecutable === null) {
 				return reject(UNABLE_TO_FIND_GIT_MSG);
@@ -1823,7 +2180,7 @@ export class DataSource extends Disposable {
 
 			resolveSpawnOutput(cp.spawn(this.gitExecutable.path, args, {
 				cwd: repo,
-				env: Object.assign({}, process.env, this.askpassEnv)
+				env: Object.assign({}, process.env, this.askpassEnv, extraEnv || {})
 			})).then((values) => {
 				const status = values[0], stdout = values[1], stderr = values[2];
 				if (status.code === 0 || ignoreExitCode) {
@@ -1974,6 +2331,19 @@ interface GitCommitData {
 export interface GitCommitDetailsData {
 	commitDetails: GitCommitDetails | null;
 	error: ErrorInfo;
+}
+
+export interface InteractiveRebaseTodoEntry {
+	readonly hash: string;
+	readonly subject: string;
+	readonly author: string;
+	readonly relativeDate: string;
+}
+
+export interface InteractiveRebaseData {
+	readonly base: InteractiveRebaseTodoEntry;
+	readonly entries: InteractiveRebaseTodoEntry[];
+	readonly headName?: string;
 }
 
 interface GitCommitComparisonData {
