@@ -1702,8 +1702,12 @@ class GitGraphView {
 	}
 
 	private rebaseAction(obj: string, name: string, actionOn: GG.RebaseActionOn, target: DialogTarget & (CommitTarget | RefTarget)) {
-		dialog.showForm('Are you sure you want to rebase ' + (this.gitBranchHead !== null ? '<b><i>' + escapeHtml(this.gitBranchHead) + '</i></b> (the current branch)' : 'the current branch') + ' on ' + actionOn.toLowerCase() + ' <b><i>' + escapeHtml(name) + '</i></b>?', [], 'Yes, rebase', (_values) => {
-			runAction({ command: 'rebase', repo: this.currentRepo, obj: obj, actionOn: actionOn, ignoreDate: false, interactive: true }, 'Launching Interactive Rebase');
+		dialog.showForm('Are you sure you want to rebase ' + (this.gitBranchHead !== null ? '<b><i>' + escapeHtml(this.gitBranchHead) + '</i></b> (the current branch)' : 'the current branch') + ' on ' + actionOn.toLowerCase() + ' <b><i>' + escapeHtml(name) + '</i></b>?', [
+			{ type: DialogInputType.Checkbox, name: 'Interactive Rebase', value: this.config.dialogDefaults.rebase.interactive, description: 'Opens the Interactive Rebase editor to reorder, edit, squash, fixup or drop commits before they are applied.' },
+			{ type: DialogInputType.Checkbox, name: 'Ignore Date', value: this.config.dialogDefaults.rebase.ignoreDate, description: 'Rewrites the committer date of each rebased commit to the current time. Has no effect on an Interactive Rebase.', disabledWhenCheckboxChecked: 0 }
+		], 'Yes, rebase', (values) => {
+			const interactive = <boolean>values[0];
+			runAction({ command: 'rebase', repo: this.currentRepo, obj: obj, actionOn: actionOn, ignoreDate: <boolean>values[1], interactive: interactive }, interactive ? 'Launching Interactive Rebase' : 'Rebasing on ' + actionOn);
 		}, target);
 	}
 

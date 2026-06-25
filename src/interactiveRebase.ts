@@ -175,7 +175,8 @@ export class InteractiveRebasePanel {
 		const isMac = process.platform === 'darwin';
 		const altKey = isMac ? '\u2325' : 'Alt'; // ⌥ on Mac, Alt elsewhere
 		const ctrlKey = isMac ? '\u2318' : 'Ctrl'; // ⌘ on Mac, Ctrl elsewhere
-		const branchLabel = esc(displayLabel || this.obj);
+		const rawLabel = displayLabel || this.obj;
+		const branchLabel = esc(/^[0-9a-f]{40}$/i.test(rawLabel) ? rawLabel.substring(0, 7) : rawLabel);
 		const baseHash = esc(base.hash.substring(0, 7));
 		const baseSubject = esc(base.subject);
 		const baseDate = esc(base.relativeDate);
@@ -288,7 +289,7 @@ code.ref {
 	border-radius: 4px;
 	padding-right: 5px;
 	position: relative;
-	transition: border-color 0.1s, background-color 0.1s;
+	transition: border-color 0.1s, background-color 0.1s, box-shadow 0.1s;
 }
 .base-card {
 	display: grid;
@@ -311,6 +312,18 @@ code.ref {
 .entry[data-action="drop"] .row-subject,
 .entry[data-action="drop"] .row-date,
 .entry[data-action="drop"] .row-hash { opacity: 0.4; text-decoration: line-through; }
+
+/* ── Per-action accent colours (GitLens-style) ── */
+.entry { --accent: rgba(128,128,128,0.8); }
+.entry[data-action="reword"] { --accent: #3794ff; }
+.entry[data-action="edit"]   { --accent: #e8a33d; }
+.entry[data-action="squash"] { --accent: #b180d7; }
+.entry[data-action="fixup"]  { --accent: #4ec9b0; }
+.entry[data-action="drop"]   { --accent: #f14c4c; }
+.entry .row-dot { border-color: var(--accent); }
+.entry:not([data-action="pick"]) .entry-card { box-shadow: inset 3px 0 0 var(--accent); border-color: var(--accent); }
+.entry.selected:not([data-action="pick"]) .entry-card { border-color: var(--accent); }
+.entry:not([data-action="pick"]) .action-dd-btn { border-color: var(--accent); color: var(--accent); }
 
 /* ── Timeline (col 1, 20px wide) ── */
 .row-timeline {

@@ -1,6 +1,7 @@
 const CLASS_DIALOG_ACTIVE = 'dialogActive';
 const CLASS_DIALOG_INPUT_INVALID = 'inputInvalid';
 const CLASS_DIALOG_NO_INPUT = 'noInput';
+const CLASS_INPUT_DISABLED = 'inputDisabled';
 
 const enum DialogType {
 	Form,
@@ -59,6 +60,10 @@ interface DialogCheckboxInput {
 	readonly name: string;
 	readonly value: boolean;
 	readonly info?: string;
+	/** A description displayed below the checkbox, explaining what it does. */
+	readonly description?: string;
+	/** The index of another checkbox input that, when checked, disables this input. */
+	readonly disabledWhenCheckboxChecked?: number;
 }
 
 interface DialogSelectInputOption {
@@ -211,7 +216,8 @@ class Dialog {
 				if (input.type === DialogInputType.Select) {
 					inputHtml = '<td class="inputCol"><div id="dialogFormSelect' + id + '"></div></td>' + (infoColRequired ? '<td>' + infoHtml + '</td>' : '');
 				} else if (input.type === DialogInputType.Checkbox) {
-					inputHtml = '<td class="inputCol"' + (infoColRequired ? ' colspan="2"' : '') + '><span class="dialogFormCheckbox"><label><input id="dialogInput' + id + '" type="checkbox"' + (input.value ? ' checked' : '') + ' tabindex="' + (id + 1) + '"/><span class="customCheckbox"></span>' + (multiElement && !multiCheckbox ? '' : input.name) + infoHtml + '</label></span></td>';
+					const descriptionHtml = input.description ? '<span class="dialogFormCheckboxDescription">' + escapeHtml(input.description) + '</span>' : '';
+					inputHtml = '<td class="inputCol"' + (infoColRequired ? ' colspan="2"' : '') + '><span class="dialogFormCheckbox"><label><input id="dialogInput' + id + '" type="checkbox"' + (input.value ? ' checked' : '') + ' tabindex="' + (id + 1) + '"/><span class="customCheckbox"></span>' + (multiElement && !multiCheckbox ? '' : input.name) + infoHtml + '</label></span>' + descriptionHtml + '</td>';
 				} else {
 					inputHtml = '<td class="inputCol"><input id="dialogInput' + id + '" type="text" value="' + escapeHtml(input.default) + '"' + (input.type === DialogInputType.Text && input.placeholder !== null ? ' placeholder="' + escapeHtml(input.placeholder) + '"' : '') + ' tabindex="' + (id + 1) + '"/></td>' + (infoColRequired ? '<td>' + infoHtml + '</td>' : '');
 				}
@@ -284,6 +290,24 @@ class Dialog {
 				}
 			});
 		}
+
+		// Wire up checkboxes that are disabled when another checkbox is checked
+		inputs.forEach((input, index) => {
+			if (input.type !== DialogInputType.Checkbox || typeof input.disabledWhenCheckboxChecked !== 'number') return;
+			const controller = <HTMLInputElement>document.getElementById('dialogInput' + input.disabledWhenCheckboxChecked);
+			const dependent = <HTMLInputElement>document.getElementById('dialogInput' + index);
+			if (controller === null || dependent === null) return;
+			const label = dependent.closest('label');
+			const cell = dependent.closest('td');
+			const description = cell !== null ? <HTMLElement | null>cell.querySelector('.dialogFormCheckboxDescription') : null;
+			const update = () => {
+				dependent.disabled = controller.checked;
+				if (label !== null) alterClass(<HTMLElement>label, CLASS_INPUT_DISABLED, controller.checked);
+				if (description !== null) alterClass(description, CLASS_INPUT_DISABLED, controller.checked);
+			};
+			controller.addEventListener('change', update);
+			update();
+		});
 
 		if (inputs.length > 0 && (inputs[0].type === DialogInputType.Text || inputs[0].type === DialogInputType.TextRef)) {
 			// If the first input is a text field, set focus to it.
