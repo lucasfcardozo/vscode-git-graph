@@ -8,6 +8,7 @@ export interface InteractiveRebaseEntryState {
 	action: InteractiveRebaseAction;
 	hash: string;
 	subject: string;
+	message?: string;
 }
 
 interface WebviewMessage {
@@ -33,9 +34,10 @@ export class InteractiveRebasePanel {
 	 * @param repo The path of the repository.
 	 * @param obj The branch or commit to rebase onto.
 	 * @param dataSource The DataSource instance.
+	 * @param preset Optional preset that pre-fills the actions (e.g. 'squash' marks every commit except the oldest as squash).
 	 * @returns An error string if something went wrong, or null on success.
 	 */
-	public static async launch(repo: string, obj: string, dataSource: DataSource): Promise<string | null> {
+	public static async launch(repo: string, obj: string, dataSource: DataSource, preset?: 'squash'): Promise<string | null> {
 		if (InteractiveRebasePanel.currentPanel) {
 			InteractiveRebasePanel.currentPanel.panel.dispose();
 		}
@@ -48,7 +50,7 @@ export class InteractiveRebasePanel {
 			return 'There are no commits to rebase.';
 		}
 
-		InteractiveRebasePanel.currentPanel = new InteractiveRebasePanel(repo, obj, result, dataSource, null);
+		InteractiveRebasePanel.currentPanel = new InteractiveRebasePanel(repo, obj, result, dataSource, null, preset);
 		return null;
 	}
 
@@ -76,7 +78,7 @@ export class InteractiveRebasePanel {
 		return null;
 	}
 
-	private constructor(repo: string, obj: string, data: InteractiveRebaseData, dataSource: DataSource, todoFilePath: string | null) {
+	private constructor(repo: string, obj: string, data: InteractiveRebaseData, dataSource: DataSource, todoFilePath: string | null, preset?: 'squash') {
 		this.repo = repo;
 		this.obj = obj;
 		this.dataSource = dataSource;
@@ -95,7 +97,7 @@ export class InteractiveRebasePanel {
 			}
 		);
 
-		this.panel.webview.html = this.getHtml(data.base, data.entries, displayLabel);
+		this.panel.webview.html = this.getHtml(data.base, data.entries, displayLabel, preset);
 
 		this.subscriptions.push(
 			this.panel.webview.onDidReceiveMessage(async (msg: WebviewMessage) => {
@@ -152,11 +154,12 @@ export class InteractiveRebasePanel {
 		} catch (_) { /* ignore */ }
 	}
 
-	private getHtml(base: InteractiveRebaseTodoEntry, entries: InteractiveRebaseTodoEntry[], displayLabel?: string): string {
+	private getHtml(base: InteractiveRebaseTodoEntry, entries: InteractiveRebaseTodoEntry[], displayLabel?: string, preset?: 'squash'): string {
 		const nonce = getNonce();
 
-		const initialEntries = entries.map((e) => ({
-			action: 'pick',
+		const initialEntries = entries.map((e, i) => ({
+			// 'squash' preset: keep the oldest commit as 'pick' and squash every newer commit into it.
+			action: preset === 'squash' && i > 0 ? 'squash' : 'pick',
 			hash: e.hash,
 			subject: e.subject,
 			relativeDate: e.relativeDate
@@ -324,6 +327,51 @@ code.ref {
 .entry:not([data-action="pick"]) .entry-card { box-shadow: inset 3px 0 0 var(--accent); border-color: var(--accent); }
 .entry.selected:not([data-action="pick"]) .entry-card { border-color: var(--accent); }
 .entry:not([data-action="pick"]) .action-dd-btn { border-color: var(--accent); color: var(--accent); }
+
+/* ── Result preview (topbar) ── */
+#result-meta.reduces { font-weight: 600; }
+#result-meta .result-arrow { opacity: 0.7; margin: 0 2px; }
+#result-meta .result-final { color: var(--accent-squash, #b180d7); font-weight: 600; }
+
+/* ── Squash/fixup grouping (melded into the commit above) ── */
+.entry[data-action="squash"] .entry-card,
+.entry[data-action="fixup"] .entry-card { margin-left: 18px; }
+.group-indicator {
+	display: none;
+	position: absolute;
+	left: -15px;
+	width: 14px;
+	text-align: center;
+	font-size: 13px;
+	opacity: 0.85;
+	color: var(--accent);
+	pointer-events: none;
+}
+.entry[data-action="squash"] .group-indicator,
+.entry[data-action="fixup"] .group-indicator { display: block; }
+
+/* ── Inline commit message editor (reword) ── */
+.row-subject.editable { cursor: text; }
+.msg-input {
+	width: 100%;
+	height: 24px;
+	padding: 0 6px;
+	border: 1px solid var(--accent, rgba(128,128,128,0.6));
+	border-radius: 4px;
+	background: var(--vscode-input-background, rgba(128,128,128,0.1));
+	color: var(--vscode-input-foreground, inherit);
+	font-family: inherit;
+	font-size: 13px;
+	outline: none;
+}
+.msg-edited-dot {
+	display: inline-block;
+	width: 6px; height: 6px;
+	border-radius: 50%;
+	background: var(--accent, #3794ff);
+	margin-left: 6px;
+	vertical-align: middle;
+}
 
 /* ── Timeline (col 1, 20px wide) ── */
 .row-timeline {
@@ -508,7 +556,7 @@ code.ref {
 
 <div id="topbar">
 	<span>Git Graph &middot; Interactive Rebase</span>
-	<span id="topbar-meta"><code class="ref">${branchLabel}</code>&nbsp;onto&nbsp;<code class="ref">${baseHash}</code>&nbsp;&middot;&nbsp;${count}&nbsp;${count === 1 ? 'commit' : 'commits'}</span>
+	<span id="topbar-meta"><code class="ref">${branchLabel}</code>&nbsp;onto&nbsp;<code class="ref">${baseHash}</code>&nbsp;&middot;&nbsp;<span id="result-meta">${count}&nbsp;${count === 1 ? 'commit' : 'commits'}</span></span>
 	<button id="sort-btn" title="Toggle commit order">&#x2191;&#x2193;&nbsp;Oldest first</button>
 </div>
 
@@ -527,12 +575,12 @@ code.ref {
 
 <div id="footer">
 	<div id="footer-hints">
-		<span class="sc"><u>p</u>ick</span>
-		<span class="sc"><u>r</u>eword</span>
-		<span class="sc"><u>e</u>dit</span>
-		<span class="sc"><u>s</u>quash</span>
-		<span class="sc"><u>f</u>ixup</span>
-		<span class="sc"><u>d</u>rop</span>
+		<span class="sc" title="Keep this commit as is."><u>p</u>ick</span>
+		<span class="sc" title="Keep this commit, but edit its message inline."><u>r</u>eword</span>
+		<span class="sc" title="Stop during the rebase to amend this commit."><u>e</u>dit</span>
+		<span class="sc" title="Meld into the commit above, combining both messages."><u>s</u>quash</span>
+		<span class="sc" title="Meld into the commit above, discarding this message."><u>f</u>ixup</span>
+		<span class="sc" title="Remove this commit entirely."><u>d</u>rop</span>
 		<span class="sc">${altKey}+&#x2191;&#x2193;&nbsp;move</span>
 		<span class="sc">&#x2191;&#x2193;&nbsp;select</span>
 	</div>
@@ -550,11 +598,41 @@ code.ref {
 	let draggingIndex = -1;
 	let selectedIndex = -1;
 
+	const ACTION_DESC = {
+		pick: 'Keep this commit as is.',
+		reword: 'Keep this commit, but edit its message (editable inline below).',
+		edit: 'Stop during the rebase to amend this commit.',
+		squash: 'Meld into the commit above, combining both messages.',
+		fixup: 'Meld into the commit above, discarding this message.',
+		drop: 'Remove this commit entirely.'
+	};
+
+	// Number of commits that will remain after the rebase: squash/fixup meld into the
+	// commit above and drop removes the commit, so only pick/reword/edit produce a commit.
+	function computeResult() {
+		return entries.filter(function(e) { return e.action === 'pick' || e.action === 'reword' || e.action === 'edit'; }).length;
+	}
+
+	function updateResult() {
+		const total = entries.length;
+		const final = computeResult();
+		const meta = document.getElementById('result-meta');
+		if (!meta) return;
+		if (final === total) {
+			meta.classList.remove('reduces');
+			meta.textContent = total + ' ' + (total === 1 ? 'commit' : 'commits');
+		} else {
+			meta.classList.add('reduces');
+			meta.innerHTML = total + ' \\u2192 <span class="result-final">' + final + '</span> ' + (final === 1 ? 'commit' : 'commits');
+		}
+	}
+
 	function render(keepSel) {
 		const list = document.getElementById('entry-list');
 		list.querySelectorAll('.entry').forEach(function(el) { el.remove(); });
 		entries.forEach(function(entry, i) { list.appendChild(makeRow(entry, i)); });
 		if (keepSel && selectedIndex >= 0 && selectedIndex < entries.length) setSelected(selectedIndex);
+		updateResult();
 	}
 
 	function makeRow(entry, index) {
@@ -594,6 +672,7 @@ code.ref {
 		['pick', 'reword', 'edit', 'squash', 'fixup', 'drop'].forEach(function(a) {
 			const li = document.createElement('li');
 			li.textContent = a;
+			li.title = ACTION_DESC[a] || '';
 			if (a === entry.action) li.classList.add('active');
 			li.addEventListener('mousedown', function(e) {
 				e.stopPropagation();
@@ -609,8 +688,35 @@ code.ref {
 
 		const subject = document.createElement('div');
 		subject.className = 'row-subject';
-		subject.textContent = entry.subject;
-		subject.title = entry.subject;
+		if (entry.action === 'reword') {
+			subject.classList.add('editable');
+			const input = document.createElement('input');
+			input.className = 'msg-input';
+			input.type = 'text';
+			input.value = (typeof entry.message === 'string' ? entry.message : entry.subject);
+			input.placeholder = entry.subject;
+			input.title = 'Edit the commit message';
+			input.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+			input.addEventListener('input', function() { entries[index].message = input.value; });
+			input.addEventListener('keydown', function(e) {
+				if (e.key === 'Enter' && !(e.ctrlKey || e.metaKey)) { e.preventDefault(); input.blur(); }
+			});
+			subject.appendChild(input);
+		} else {
+			subject.textContent = entry.subject;
+			subject.title = entry.subject;
+			if (typeof entry.message === 'string' && entry.message !== entry.subject) {
+				const dot = document.createElement('span');
+				dot.className = 'msg-edited-dot';
+				dot.title = 'Edited message: ' + entry.message;
+				subject.appendChild(dot);
+			}
+		}
+
+		const groupInd = document.createElement('span');
+		groupInd.className = 'group-indicator';
+		groupInd.textContent = '\\u2937'; // ⤷ meld-into-above marker
+		groupInd.title = 'Melds into the commit above';
 
 		const date = document.createElement('div');
 		date.className = 'row-date';
@@ -622,6 +728,7 @@ code.ref {
 
 		const card = document.createElement('div');
 		card.className = 'entry-card';
+		card.appendChild(groupInd);
 		card.appendChild(actionCell);
 		card.appendChild(subject);
 		card.appendChild(date);
@@ -692,12 +799,11 @@ code.ref {
 		entries[i].action = action;
 		const rows = document.querySelectorAll('.entry');
 		if (!rows[i]) return;
-		rows[i].dataset.action = action;
-		const lbl = rows[i].querySelector('.action-dd-label');
-		if (lbl) lbl.textContent = action;
-		rows[i].querySelectorAll('.action-dd-list li').forEach(function(li) {
-			li.classList.toggle('active', li.textContent === action);
-		});
+		// Rebuild the row so the inline message editor / edited indicator / grouping reflect the new action.
+		const newRow = makeRow(entries[i], i);
+		rows[i].replaceWith(newRow);
+		if (i === selectedIndex) newRow.classList.add('selected');
+		updateResult();
 	}
 
 	function moveEntry(from, to) {
@@ -709,7 +815,12 @@ code.ref {
 	}
 
 	document.addEventListener('keydown', function(e) {
-		if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON')) return;
+		const inField = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON');
+		if (inField) {
+			// Allow starting the rebase from within the inline message editor.
+			if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); document.getElementById('startBtn').click(); }
+			return;
+		}
 		if (!e.altKey) {
 			if (e.key === 'ArrowDown') { e.preventDefault(); setSelected(Math.min(selectedIndex + 1, entries.length - 1)); return; }
 			if (e.key === 'ArrowUp')   { e.preventDefault(); setSelected(Math.max(selectedIndex - 1, 0)); return; }
@@ -752,7 +863,11 @@ code.ref {
 		setLoading(true);
 		vscode.postMessage({
 			command: 'startRebase',
-			entries: entries.map(function(e) { return { action: e.action, hash: e.hash, subject: e.subject }; })
+			entries: entries.map(function(e) {
+				const o = { action: e.action, hash: e.hash, subject: e.subject };
+				if (e.action === 'reword' && typeof e.message === 'string' && e.message.trim() !== '') o.message = e.message;
+				return o;
+			})
 		});
 	});
 

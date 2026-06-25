@@ -539,7 +539,7 @@ export class GitGraphView extends Disposable {
 				break;
 			case 'rebase':
 				if (msg.interactive) {
-					const launchError = await InteractiveRebasePanel.launch(msg.repo, msg.obj, this.dataSource);
+					const launchError = await InteractiveRebasePanel.launch(msg.repo, msg.obj, this.dataSource, msg.squashPreset ? 'squash' : undefined);
 					this.sendMessage({
 						command: 'rebase',
 						actionOn: msg.actionOn,

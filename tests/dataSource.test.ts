@@ -10,7 +10,7 @@ import * as fs from 'fs';
 import * as iconv from 'iconv-lite';
 import * as path from 'path';
 import { ConfigurationChangeEvent } from 'vscode';
-import { DataSource, GitConfigKey } from '../src/dataSource';
+import { DataSource, GitConfigKey, buildInteractiveRebaseEditorQueue } from '../src/dataSource';
 import { Logger } from '../src/logger';
 import { CommitOrdering, GitConfigLocation, GitPushBranchMode, GitResetMode, GitSignature, GitSignatureStatus, MergeActionOn, RebaseActionOn, TagType } from '../src/types';
 import * as utils from '../src/utils';
@@ -6845,5 +6845,90 @@ describe('DataSource', () => {
 			// Assert
 			expect(result).toBe('');
 		});
+	});
+});
+
+describe('buildInteractiveRebaseEditorQueue', () => {
+	it('Should produce no stops when all commits are picked', () => {
+		const queue = buildInteractiveRebaseEditorQueue([
+			{ action: 'pick' },
+			{ action: 'pick' }
+		]);
+		expect(queue).toStrictEqual([]);
+	});
+
+	it('Should push the edited message for a reword', () => {
+		const queue = buildInteractiveRebaseEditorQueue([
+			{ action: 'pick' },
+			{ action: 'reword', message: 'new message' }
+		]);
+		expect(queue).toStrictEqual(['new message']);
+	});
+
+	it('Should push null for a reword without an edited message', () => {
+		const queue = buildInteractiveRebaseEditorQueue([
+			{ action: 'reword' }
+		]);
+		expect(queue).toStrictEqual([null]);
+	});
+
+	it('Should treat trimmed-empty messages as no override', () => {
+		const queue = buildInteractiveRebaseEditorQueue([
+			{ action: 'reword', message: '   ' }
+		]);
+		expect(queue).toStrictEqual([null]);
+	});
+
+	it('Should create a single stop for a squash group, using the leader message', () => {
+		const queue = buildInteractiveRebaseEditorQueue([
+			{ action: 'pick', message: 'combined' },
+			{ action: 'squash' },
+			{ action: 'squash' }
+		]);
+		expect(queue).toStrictEqual(['combined']);
+	});
+
+	it('Should preserve the default combined message when the squash leader is not edited', () => {
+		const queue = buildInteractiveRebaseEditorQueue([
+			{ action: 'pick' },
+			{ action: 'squash' }
+		]);
+		expect(queue).toStrictEqual([null]);
+	});
+
+	it('Should not create a stop for a fixup-only group', () => {
+		const queue = buildInteractiveRebaseEditorQueue([
+			{ action: 'pick' },
+			{ action: 'fixup' }
+		]);
+		expect(queue).toStrictEqual([]);
+	});
+
+	it('Should ignore drop entries when grouping', () => {
+		const queue = buildInteractiveRebaseEditorQueue([
+			{ action: 'pick', message: 'keep' },
+			{ action: 'drop' },
+			{ action: 'squash' }
+		]);
+		expect(queue).toStrictEqual(['keep']);
+	});
+
+	it('Should handle multiple independent groups in order', () => {
+		const queue = buildInteractiveRebaseEditorQueue([
+			{ action: 'reword', message: 'first' },
+			{ action: 'pick' },
+			{ action: 'squash' },
+			{ action: 'reword', message: 'third' }
+		]);
+		expect(queue).toStrictEqual(['first', null, 'third']);
+	});
+
+	it('Should return an empty queue when the plan contains an edit', () => {
+		const queue = buildInteractiveRebaseEditorQueue([
+			{ action: 'reword', message: 'ignored' },
+			{ action: 'edit' },
+			{ action: 'squash' }
+		]);
+		expect(queue).toStrictEqual([]);
 	});
 });

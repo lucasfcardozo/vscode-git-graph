@@ -1,7 +1,7 @@
 {
 	"name": "git-graph",
 	"displayName": "Git Graph",
-	"version": "1.30.0-alpha.3",
+	"version": "1.30.0",
 	"publisher": "mhutchie",
 	"author": {
 		"name": "Michael Hutchison",
@@ -674,7 +674,7 @@
 				},
 				"git-graph.dialog.rebase.launchInteractiveRebase": {
 					"type": "boolean",
-					"default": true,
+					"default": false,
 					"description": "Default state of the \"Launch Interactive Rebase in VS Code Editor\" checkbox."
 				},
 				"git-graph.dialog.resetCurrentBranchToCommit.mode": {

@@ -1176,6 +1176,9 @@ export class DataSource extends Disposable {
 	private async cleanupInteractiveRebaseTmpDir(dirPath: string): Promise<void> {
 		await this.unlinkIfExists(path.join(dirPath, 'git-rebase-todo'));
 		await this.unlinkIfExists(path.join(dirPath, 'sequence-editor.js'));
+		await this.unlinkIfExists(path.join(dirPath, 'commit-editor.js'));
+		await this.unlinkIfExists(path.join(dirPath, 'messages.json'));
+		await this.unlinkIfExists(path.join(dirPath, 'counter.txt'));
 		await this.rmdirIfExists(dirPath);
 	}
 
@@ -1321,12 +1324,15 @@ export class DataSource extends Disposable {
 	 * @param entries The interactive rebase entries with their actions.
 	 * @returns The ErrorInfo from the executed command.
 	 */
-	public async rebaseInteractiveWithEntries(repo: string, obj: string, entries: ReadonlyArray<{ action: string; hash: string; subject: string }>): Promise<ErrorInfo> {
+	public async rebaseInteractiveWithEntries(repo: string, obj: string, entries: ReadonlyArray<{ action: string; hash: string; subject: string; message?: string }>): Promise<ErrorInfo> {
 		let tmpDir: string | null = null;
 		try {
 			tmpDir = await this.mkdtemp(path.join(os.tmpdir(), 'git-graph-rebase-'));
 			const todoPath = path.join(tmpDir, 'git-rebase-todo');
 			const sequenceEditorPath = path.join(tmpDir, 'sequence-editor.js');
+			const commitEditorPath = path.join(tmpDir, 'commit-editor.js');
+			const messagesPath = path.join(tmpDir, 'messages.json');
+			const counterPath = path.join(tmpDir, 'counter.txt');
 
 			const todoContent = entries.map((e) => e.action + ' ' + e.hash + ' ' + e.subject).join('\n') + '\n';
 			await this.writeFile(todoPath, todoContent);
@@ -1341,6 +1347,28 @@ export class DataSource extends Disposable {
 				'fs.copyFileSync(source, target);'
 			].join('\n'));
 
+			// Build the ordered queue of commit-message overrides (one entry per editor stop git will make).
+			// A string overrides the message; null preserves git's default (e.g. the combined squash message),
+			// which also suppresses the editor prompt entirely.
+			const messageQueue = buildInteractiveRebaseEditorQueue(entries);
+			await this.writeFile(messagesPath, JSON.stringify(messageQueue));
+			await this.writeFile(counterPath, '0');
+			await this.writeFile(commitEditorPath, [
+				'const fs = require("fs");',
+				'const path = require("path");',
+				'const target = process.argv[2];',
+				'const dir = __dirname;',
+				'let msgs = [];',
+				'try { msgs = JSON.parse(fs.readFileSync(path.join(dir, "messages.json"), "utf8")); } catch (e) { msgs = []; }',
+				'let k = 0;',
+				'try { k = parseInt(fs.readFileSync(path.join(dir, "counter.txt"), "utf8"), 10) || 0; } catch (e) { k = 0; }',
+				'const m = msgs[k];',
+				'if (typeof m === "string" && target) {',
+				'\tfs.writeFileSync(target, m.charAt(m.length - 1) === "\\n" ? m : m + "\\n", "utf8");',
+				'}',
+				'try { fs.writeFileSync(path.join(dir, "counter.txt"), String(k + 1), "utf8"); } catch (e) { /* ignore */ }'
+			].join('\n'));
+
 			const args = ['rebase', '--interactive'];
 			if (getConfig().signCommits) {
 				args.push('-S');
@@ -1348,8 +1376,10 @@ export class DataSource extends Disposable {
 			args.push(obj);
 
 			const sequenceEditorCommand = '"' + process.execPath.replace(/"/g, '\\"') + '" "' + sequenceEditorPath.replace(/"/g, '\\"') + '" "' + todoPath.replace(/"/g, '\\"') + '"';
+			const commitEditorCommand = '"' + process.execPath.replace(/"/g, '\\"') + '" "' + commitEditorPath.replace(/"/g, '\\"') + '"';
 			return await this.runGitCommand(args, repo, {
-				GIT_SEQUENCE_EDITOR: sequenceEditorCommand
+				GIT_SEQUENCE_EDITOR: sequenceEditorCommand,
+				GIT_EDITOR: commitEditorCommand
 			});
 		} catch (error) {
 			return typeof error === 'string' ? error : 'Unable to execute interactive rebase.';
@@ -2331,6 +2361,40 @@ interface GitCommitData {
 export interface GitCommitDetailsData {
 	commitDetails: GitCommitDetails | null;
 	error: ErrorInfo;
+}
+
+/**
+ * Build the ordered queue of commit-message overrides applied during an interactive rebase, one
+ * item per editor stop git will make (top-down). A string overrides the message for that stop; null
+ * preserves git's default message (e.g. the combined squash message), which also suppresses the
+ * editor prompt. Plans containing `edit` return an empty queue (all defaults preserved) to avoid
+ * misaligning the queue with git's unpredictable stops.
+ * @param entries The ordered interactive rebase entries.
+ * @returns The ordered queue of message overrides.
+ */
+export function buildInteractiveRebaseEditorQueue(entries: ReadonlyArray<{ action: string; message?: string }>): (string | null)[] {
+	if (entries.some((e) => e.action === 'edit')) {
+		return [];
+	}
+	const eff = entries.filter((e) => e.action !== 'drop');
+	const queue: (string | null)[] = [];
+	let i = 0;
+	while (i < eff.length) {
+		const leader = eff[i];
+		i++;
+		let hasSquash = leader.action === 'squash';
+		while (i < eff.length && (eff[i].action === 'squash' || eff[i].action === 'fixup')) {
+			if (eff[i].action === 'squash') {
+				hasSquash = true;
+			}
+			i++;
+		}
+		if (leader.action === 'reword' || hasSquash) {
+			const msg = leader.message;
+			queue.push(typeof msg === 'string' && msg.trim() !== '' ? msg : null);
+		}
+	}
+	return queue;
 }
 
 export interface InteractiveRebaseTodoEntry {

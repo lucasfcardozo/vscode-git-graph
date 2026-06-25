@@ -1222,6 +1222,10 @@ class GitGraphView {
 				visible: visibility.rebase,
 				onClick: () => this.rebaseAction(hash, abbrevCommit(hash), GG.RebaseActionOn.Commit, target)
 			}, {
+				title: 'Squash commits up to here' + ELLIPSIS,
+				visible: visibility.rebase,
+				onClick: () => this.squashCommitsAction(hash)
+			}, {
 				title: 'Reset current branch to this Commit' + ELLIPSIS,
 				visible: visibility.reset,
 				onClick: () => {
@@ -1703,12 +1707,18 @@ class GitGraphView {
 
 	private rebaseAction(obj: string, name: string, actionOn: GG.RebaseActionOn, target: DialogTarget & (CommitTarget | RefTarget)) {
 		dialog.showForm('Are you sure you want to rebase ' + (this.gitBranchHead !== null ? '<b><i>' + escapeHtml(this.gitBranchHead) + '</i></b> (the current branch)' : 'the current branch') + ' on ' + actionOn.toLowerCase() + ' <b><i>' + escapeHtml(name) + '</i></b>?', [
-			{ type: DialogInputType.Checkbox, name: 'Interactive Rebase', value: this.config.dialogDefaults.rebase.interactive, description: 'Opens the Interactive Rebase editor to reorder, edit, squash, fixup or drop commits before they are applied.' },
+			{ type: DialogInputType.Checkbox, name: 'Edit commits before applying (reorder / squash / drop)', value: this.config.dialogDefaults.rebase.interactive, description: 'Opens the Interactive Rebase editor to reorder, edit, squash, fixup or drop commits before they are applied.' },
 			{ type: DialogInputType.Checkbox, name: 'Ignore Date', value: this.config.dialogDefaults.rebase.ignoreDate, description: 'Rewrites the committer date of each rebased commit to the current time. Has no effect on an Interactive Rebase.', disabledWhenCheckboxChecked: 0 }
 		], 'Yes, rebase', (values) => {
 			const interactive = <boolean>values[0];
 			runAction({ command: 'rebase', repo: this.currentRepo, obj: obj, actionOn: actionOn, ignoreDate: <boolean>values[1], interactive: interactive }, interactive ? 'Launching Interactive Rebase' : 'Rebasing on ' + actionOn);
 		}, target);
+	}
+
+	private squashCommitsAction(hash: string) {
+		// Open the Interactive Rebase panel pre-filled to squash the clicked commit and every newer
+		// commit up to HEAD into a single commit. The base (onto) is the parent of the clicked commit.
+		runAction({ command: 'rebase', repo: this.currentRepo, obj: hash + '^', actionOn: GG.RebaseActionOn.Commit, ignoreDate: false, interactive: true, squashPreset: true }, 'Launching Interactive Rebase');
 	}
 
 
