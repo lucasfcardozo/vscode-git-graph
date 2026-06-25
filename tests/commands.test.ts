@@ -100,8 +100,8 @@ describe('CommandManager', () => {
 		});
 	});
 
-	describe('git-graph:codiconsSupported', () => {
-		it('Should set git-graph:codiconsSupported to TRUE when vscode.version >= 1.42.0', async () => {
+	describe('git-graph-plus:codiconsSupported', () => {
+		it('Should set git-graph-plus:codiconsSupported to TRUE when vscode.version >= 1.42.0', async () => {
 			// Setup
 			commandManager.dispose();
 			vscode.mockVscodeVersion('1.42.0');
@@ -113,12 +113,12 @@ describe('CommandManager', () => {
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnExecuteCommand).toHaveBeenCalledWith('setContext', 'git-graph:codiconsSupported', true);
-				expect(spyOnLog).toHaveBeenCalledWith('Successfully set Visual Studio Code Context "git-graph:codiconsSupported" to "true"');
+				expect(spyOnExecuteCommand).toHaveBeenCalledWith('setContext', 'git-graph-plus:codiconsSupported', true);
+				expect(spyOnLog).toHaveBeenCalledWith('Successfully set Visual Studio Code Context "git-graph-plus:codiconsSupported" to "true"');
 			});
 		});
 
-		it('Should set git-graph:codiconsSupported to FALSE when vscode.version < 1.42.0', async () => {
+		it('Should set git-graph-plus:codiconsSupported to FALSE when vscode.version < 1.42.0', async () => {
 			// Setup
 			commandManager.dispose();
 			vscode.mockVscodeVersion('1.41.1');
@@ -130,8 +130,8 @@ describe('CommandManager', () => {
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnExecuteCommand).toHaveBeenCalledWith('setContext', 'git-graph:codiconsSupported', false);
-				expect(spyOnLog).toHaveBeenCalledWith('Successfully set Visual Studio Code Context "git-graph:codiconsSupported" to "false"');
+				expect(spyOnExecuteCommand).toHaveBeenCalledWith('setContext', 'git-graph-plus:codiconsSupported', false);
+				expect(spyOnLog).toHaveBeenCalledWith('Successfully set Visual Studio Code Context "git-graph-plus:codiconsSupported" to "false"');
 			});
 		});
 
@@ -147,8 +147,8 @@ describe('CommandManager', () => {
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnExecuteCommand).toHaveBeenCalledWith('setContext', 'git-graph:codiconsSupported', true);
-				expect(spyOnLogError).toHaveBeenCalledWith('Failed to set Visual Studio Code Context "git-graph:codiconsSupported" to "true"');
+				expect(spyOnExecuteCommand).toHaveBeenCalledWith('setContext', 'git-graph-plus:codiconsSupported', true);
+				expect(spyOnLogError).toHaveBeenCalledWith('Failed to set Visual Studio Code Context "git-graph-plus:codiconsSupported" to "true"');
 			});
 		});
 
@@ -168,23 +168,23 @@ describe('CommandManager', () => {
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnExecuteCommand).toHaveBeenCalledWith('setContext', 'git-graph:codiconsSupported', true);
-				expect(spyOnLogError).toHaveBeenCalledWith('Unable to set Visual Studio Code Context "git-graph:codiconsSupported"');
+				expect(spyOnExecuteCommand).toHaveBeenCalledWith('setContext', 'git-graph-plus:codiconsSupported', true);
+				expect(spyOnLogError).toHaveBeenCalledWith('Unable to set Visual Studio Code Context "git-graph-plus:codiconsSupported"');
 			});
 		});
 	});
 
-	describe('git-graph.view', () => {
+	describe('git-graph-plus.view', () => {
 		it('Should open the Git Graph View', async () => {
 			// Setup
 			vscode.mockExtensionSettingReturnValue('openToTheRepoOfTheActiveTextEditorDocument', false);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.view');
+			vscode.commands.executeCommand('git-graph-plus.view');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.view');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.view');
 				expect(spyOnGitGraphViewCreateOrShow).toHaveBeenCalledWith('/path/to/extension', dataSource, extensionState, avatarManager, repoManager, logger, null);
 			});
 		});
@@ -195,11 +195,11 @@ describe('CommandManager', () => {
 			vscode.mockExtensionSettingReturnValue('openToTheRepoOfTheActiveTextEditorDocument', false);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.view', { rootUri: vscode.Uri.file('/path/to/workspace-folder/repo') });
+			vscode.commands.executeCommand('git-graph-plus.view', { rootUri: vscode.Uri.file('/path/to/workspace-folder/repo') });
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.view');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.view');
 				expect(spyOnGitGraphViewCreateOrShow).toHaveBeenCalledWith('/path/to/extension', dataSource, extensionState, avatarManager, repoManager, logger, { repo: '/path/to/workspace-folder/repo' });
 			});
 		});
@@ -211,11 +211,11 @@ describe('CommandManager', () => {
 			vscode.mockExtensionSettingReturnValue('openToTheRepoOfTheActiveTextEditorDocument', false);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.view', { rootUri: vscode.Uri.file('/path/to/workspace-folder/repo') });
+			vscode.commands.executeCommand('git-graph-plus.view', { rootUri: vscode.Uri.file('/path/to/workspace-folder/repo') });
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.view');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.view');
 				expect(spyOnGitGraphViewCreateOrShow).toHaveBeenCalledWith('/path/to/extension', dataSource, extensionState, avatarManager, repoManager, logger, { repo: '/path/to/workspace-folder/repo' });
 			});
 		});
@@ -227,17 +227,17 @@ describe('CommandManager', () => {
 			jest.spyOn(repoManager, 'getRepoContainingFile').mockReturnValueOnce('/path/to/workspace-folder');
 
 			// Run
-			vscode.commands.executeCommand('git-graph.view');
+			vscode.commands.executeCommand('git-graph-plus.view');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.view');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.view');
 				expect(spyOnGitGraphViewCreateOrShow).toHaveBeenCalledWith('/path/to/extension', dataSource, extensionState, avatarManager, repoManager, logger, { repo: '/path/to/workspace-folder' });
 			});
 		});
 	});
 
-	describe('git-graph.addGitRepository', () => {
+	describe('git-graph-plus.addGitRepository', () => {
 		let spyOnIsPathInWorkspace: jest.SpyInstance;
 		beforeAll(() => {
 			spyOnIsPathInWorkspace = jest.spyOn(utils, 'isPathInWorkspace');
@@ -251,11 +251,11 @@ describe('CommandManager', () => {
 			vscode.window.showInformationMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.addGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.addGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.addGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.addGitRepository');
 				expect(vscode.window.showOpenDialog).toHaveBeenCalledWith({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false });
 				expect(spyOnIsPathInWorkspace).toHaveBeenCalledWith('/path/to/workspace-folder/repo');
 				expect(spyOnRegisterRepo).toHaveBeenCalledWith('/path/to/workspace-folder/repo', false);
@@ -271,11 +271,11 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.addGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.addGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.addGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.addGitRepository');
 				expect(vscode.window.showOpenDialog).toHaveBeenCalledWith({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false });
 				expect(spyOnIsPathInWorkspace).toHaveBeenCalledWith('/path/to/workspace-folder/repo');
 				expect(spyOnRegisterRepo).toHaveBeenCalledWith('/path/to/workspace-folder/repo', false);
@@ -290,11 +290,11 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.addGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.addGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.addGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.addGitRepository');
 				expect(vscode.window.showOpenDialog).toHaveBeenCalledWith({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false });
 				expect(spyOnIsPathInWorkspace).toHaveBeenCalledWith('/path/to/non-workspace-folder/repo');
 				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('The folder "/path/to/non-workspace-folder/repo" is not within the opened Visual Studio Code workspace, and therefore could not be added to Git Graph.');
@@ -307,11 +307,11 @@ describe('CommandManager', () => {
 			vscode.window.showOpenDialog.mockResolvedValueOnce([]);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.addGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.addGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.addGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.addGitRepository');
 				expect(vscode.window.showOpenDialog).toHaveBeenCalledWith({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false });
 				expect(spyOnIsPathInWorkspace).not.toHaveBeenCalled();
 			});
@@ -322,11 +322,11 @@ describe('CommandManager', () => {
 			vscode.window.showOpenDialog.mockRejectedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.addGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.addGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.addGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.addGitRepository');
 				expect(vscode.window.showOpenDialog).toHaveBeenCalledWith({ canSelectFiles: false, canSelectFolders: true, canSelectMany: false });
 				expect(spyOnIsPathInWorkspace).not.toHaveBeenCalled();
 			});
@@ -338,17 +338,17 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.addGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.addGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.addGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.addGitRepository');
 				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(utils.UNABLE_TO_FIND_GIT_MSG);
 			});
 		});
 	});
 
-	describe('git-graph.removeGitRepository', () => {
+	describe('git-graph-plus.removeGitRepository', () => {
 		let spyOnIgnoreRepo: jest.SpyInstance;
 		beforeAll(() => {
 			spyOnIgnoreRepo = jest.spyOn(repoManager, 'ignoreRepo');
@@ -370,11 +370,11 @@ describe('CommandManager', () => {
 			const spyOnGetSortedRepositoryPaths = jest.spyOn(utils, 'getSortedRepositoryPaths');
 
 			// Run
-			vscode.commands.executeCommand('git-graph.removeGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.removeGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.removeGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.removeGitRepository');
 				expect(spyOnGetSortedRepositoryPaths).toHaveBeenCalledWith(repos, RepoDropdownOrder.WorkspaceFullPath);
 				expect(vscode.window.showQuickPick).toHaveBeenCalledWith(
 					[
@@ -410,11 +410,11 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.removeGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.removeGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.removeGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.removeGitRepository');
 				expect(vscode.window.showQuickPick).toHaveBeenCalledWith(
 					[
 						{
@@ -444,11 +444,11 @@ describe('CommandManager', () => {
 			vscode.window.showQuickPick.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.removeGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.removeGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.removeGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.removeGitRepository');
 				expect(vscode.window.showQuickPick).toHaveBeenCalledWith(
 					[
 						{
@@ -478,11 +478,11 @@ describe('CommandManager', () => {
 			vscode.window.showQuickPick.mockRejectedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.removeGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.removeGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.removeGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.removeGitRepository');
 				expect(vscode.window.showQuickPick).toHaveBeenCalledWith(
 					[
 						{
@@ -508,17 +508,17 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.removeGitRepository');
+			vscode.commands.executeCommand('git-graph-plus.removeGitRepository');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.removeGitRepository');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.removeGitRepository');
 				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(utils.UNABLE_TO_FIND_GIT_MSG);
 			});
 		});
 	});
 
-	describe('git-graph.clearAvatarCache', () => {
+	describe('git-graph-plus.clearAvatarCache', () => {
 		let spyOnClearCache: jest.SpyInstance;
 		beforeAll(() => {
 			spyOnClearCache = jest.spyOn(avatarManager, 'clearCache');
@@ -530,11 +530,11 @@ describe('CommandManager', () => {
 			vscode.window.showInformationMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.clearAvatarCache');
+			vscode.commands.executeCommand('git-graph-plus.clearAvatarCache');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.clearAvatarCache');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.clearAvatarCache');
 				expect(spyOnClearCache).toBeCalledTimes(1);
 				expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('The Avatar Cache was successfully cleared.');
 			});
@@ -547,11 +547,11 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.clearAvatarCache');
+			vscode.commands.executeCommand('git-graph-plus.clearAvatarCache');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.clearAvatarCache');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.clearAvatarCache');
 				expect(spyOnClearCache).toBeCalledTimes(1);
 				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith(errorMessage);
 			});
@@ -563,18 +563,18 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.clearAvatarCache');
+			vscode.commands.executeCommand('git-graph-plus.clearAvatarCache');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.clearAvatarCache');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.clearAvatarCache');
 				expect(spyOnClearCache).toBeCalledTimes(1);
 				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('An unexpected error occurred while running the command "Clear Avatar Cache".');
 			});
 		});
 	});
 
-	describe('git-graph.fetch', () => {
+	describe('git-graph-plus.fetch', () => {
 		let spyOnGetLastActiveRepo: jest.SpyInstance;
 		beforeAll(() => {
 			spyOnGetLastActiveRepo = jest.spyOn(extensionState, 'getLastActiveRepo');
@@ -596,11 +596,11 @@ describe('CommandManager', () => {
 			const spyOnGetSortedRepositoryPaths = jest.spyOn(utils, 'getSortedRepositoryPaths');
 
 			// Run
-			vscode.commands.executeCommand('git-graph.fetch');
+			vscode.commands.executeCommand('git-graph-plus.fetch');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.fetch');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.fetch');
 				expect(spyOnGetSortedRepositoryPaths).toHaveBeenCalledWith(repos, RepoDropdownOrder.WorkspaceFullPath);
 				expect(vscode.window.showQuickPick).toHaveBeenCalledWith(
 					[
@@ -639,11 +639,11 @@ describe('CommandManager', () => {
 			});
 
 			// Run
-			vscode.commands.executeCommand('git-graph.fetch');
+			vscode.commands.executeCommand('git-graph-plus.fetch');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.fetch');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.fetch');
 				expect(vscode.window.showQuickPick).toHaveBeenCalledWith(
 					[
 						{
@@ -677,11 +677,11 @@ describe('CommandManager', () => {
 			});
 
 			// Run
-			vscode.commands.executeCommand('git-graph.fetch');
+			vscode.commands.executeCommand('git-graph-plus.fetch');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.fetch');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.fetch');
 				expect(vscode.window.showQuickPick).toHaveBeenCalledWith(
 					[
 						{
@@ -712,11 +712,11 @@ describe('CommandManager', () => {
 			vscode.window.showQuickPick.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.fetch');
+			vscode.commands.executeCommand('git-graph-plus.fetch');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.fetch');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.fetch');
 				expect(vscode.window.showQuickPick).toHaveBeenCalledWith(
 					[
 						{
@@ -748,11 +748,11 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.fetch');
+			vscode.commands.executeCommand('git-graph-plus.fetch');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.fetch');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.fetch');
 				expect(vscode.window.showQuickPick).toHaveBeenCalledWith(
 					[
 						{
@@ -781,11 +781,11 @@ describe('CommandManager', () => {
 			});
 
 			// Run
-			vscode.commands.executeCommand('git-graph.fetch');
+			vscode.commands.executeCommand('git-graph-plus.fetch');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.fetch');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.fetch');
 				expect(spyOnGitGraphViewCreateOrShow).toHaveBeenCalledWith('/path/to/extension', dataSource, extensionState, avatarManager, repoManager, logger, { repo: '/path/to/repo1', runCommandOnLoad: 'fetch' });
 			});
 		});
@@ -795,33 +795,33 @@ describe('CommandManager', () => {
 			spyOnGetRepos.mockReturnValueOnce({});
 
 			// Run
-			vscode.commands.executeCommand('git-graph.fetch');
+			vscode.commands.executeCommand('git-graph-plus.fetch');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.fetch');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.fetch');
 				expect(spyOnGitGraphViewCreateOrShow).toHaveBeenCalledWith('/path/to/extension', dataSource, extensionState, avatarManager, repoManager, logger, null);
 			});
 		});
 	});
 
-	describe('git-graph.endAllWorkspaceCodeReviews', () => {
+	describe('git-graph-plus.endAllWorkspaceCodeReviews', () => {
 		it('Should end all workspace code reviews', () => {
 			// Setup
 			const spyOnEndAllWorkspaceCodeReviews = jest.spyOn(extensionState, 'endAllWorkspaceCodeReviews');
 			vscode.window.showInformationMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.endAllWorkspaceCodeReviews');
+			vscode.commands.executeCommand('git-graph-plus.endAllWorkspaceCodeReviews');
 
 			// Assert
-			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.endAllWorkspaceCodeReviews');
+			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.endAllWorkspaceCodeReviews');
 			expect(spyOnEndAllWorkspaceCodeReviews).toBeCalledTimes(1);
 			expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Ended All Code Reviews in Workspace');
 		});
 	});
 
-	describe('git-graph.endSpecificWorkspaceCodeReview', () => {
+	describe('git-graph-plus.endSpecificWorkspaceCodeReview', () => {
 		it('Should end the selected code review', async () => {
 			// Setup
 			spyOnGetCodeReviews.mockReturnValueOnce({
@@ -842,11 +842,11 @@ describe('CommandManager', () => {
 			vscode.window.showInformationMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.endSpecificWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.endSpecificWorkspaceCodeReview');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.endSpecificWorkspaceCodeReview');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.endSpecificWorkspaceCodeReview');
 				expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Successfully ended Code Review "repo: 1a2b3c4d".');
 			});
 			expect(spyOnGetCommitSubject).toHaveBeenCalledWith('/path/to/repo', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b');
@@ -872,10 +872,10 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.endSpecificWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.endSpecificWorkspaceCodeReview');
 
 			// Assert
-			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.endSpecificWorkspaceCodeReview');
+			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.endSpecificWorkspaceCodeReview');
 			expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('There are no Code Reviews in progress within the current workspace.');
 			expect(vscode.window.showQuickPick).not.toHaveBeenCalled();
 		});
@@ -898,11 +898,11 @@ describe('CommandManager', () => {
 			vscode.window.showQuickPick.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.endSpecificWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.endSpecificWorkspaceCodeReview');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.endSpecificWorkspaceCodeReview');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.endSpecificWorkspaceCodeReview');
 				expect(vscode.window.showQuickPick).toHaveBeenCalledTimes(1);
 				expect(spyOnEndCodeReview).not.toHaveBeenCalled();
 			});
@@ -927,11 +927,11 @@ describe('CommandManager', () => {
 			spyOnEndCodeReview.mockRejectedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.endSpecificWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.endSpecificWorkspaceCodeReview');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.endSpecificWorkspaceCodeReview');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.endSpecificWorkspaceCodeReview');
 				expect(vscode.window.showQuickPick).toHaveBeenCalledTimes(1);
 				expect(vscode.window.showInformationMessage).not.toHaveBeenCalled();
 				expect(vscode.window.showErrorMessage).not.toHaveBeenCalled();
@@ -958,11 +958,11 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.endSpecificWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.endSpecificWorkspaceCodeReview');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.endSpecificWorkspaceCodeReview');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.endSpecificWorkspaceCodeReview');
 				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Visual Studio Code was unable to save the Git Graph Workspace State Memento.');
 			});
 		});
@@ -986,17 +986,17 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.endSpecificWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.endSpecificWorkspaceCodeReview');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.endSpecificWorkspaceCodeReview');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.endSpecificWorkspaceCodeReview');
 				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('An unexpected error occurred while running the command "End a specific Code Review in Workspace...".');
 			});
 		});
 	});
 
-	describe('git-graph.resumeWorkspaceCodeReview', () => {
+	describe('git-graph-plus.resumeWorkspaceCodeReview', () => {
 		it('Should load the selected code review in the Git Graph View (single commit)', async () => {
 			// Setup
 			spyOnGetCodeReviews.mockReturnValueOnce({
@@ -1028,11 +1028,11 @@ describe('CommandManager', () => {
 			vscode.window.showQuickPick.mockImplementationOnce((items: Promise<any[]>, _: any) => items.then((items) => items[0]));
 
 			// Run
-			vscode.commands.executeCommand('git-graph.resumeWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.resumeWorkspaceCodeReview');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.resumeWorkspaceCodeReview');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.resumeWorkspaceCodeReview');
 				expect(spyOnGitGraphViewCreateOrShow).toHaveBeenCalledWith('/path/to/extension', dataSource, extensionState, avatarManager, repoManager, logger, {
 					repo: '/path/to/repo',
 					commitDetails: {
@@ -1085,11 +1085,11 @@ describe('CommandManager', () => {
 			vscode.window.showQuickPick.mockImplementationOnce((items: Promise<any[]>, _: any) => items.then((items) => items[0]));
 
 			// Run
-			vscode.commands.executeCommand('git-graph.resumeWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.resumeWorkspaceCodeReview');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.resumeWorkspaceCodeReview');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.resumeWorkspaceCodeReview');
 				expect(spyOnGitGraphViewCreateOrShow).toHaveBeenCalledWith('/path/to/extension', dataSource, extensionState, avatarManager, repoManager, logger, {
 					repo: '/path/to/repo',
 					commitDetails: {
@@ -1131,11 +1131,11 @@ describe('CommandManager', () => {
 			vscode.window.showQuickPick.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.resumeWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.resumeWorkspaceCodeReview');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.resumeWorkspaceCodeReview');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.resumeWorkspaceCodeReview');
 				expect(vscode.window.showQuickPick).toHaveBeenCalledTimes(1);
 				expect(spyOnGitGraphViewCreateOrShow).not.toHaveBeenCalled();
 			});
@@ -1147,10 +1147,10 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.resumeWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.resumeWorkspaceCodeReview');
 
 			// Assert
-			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.resumeWorkspaceCodeReview');
+			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.resumeWorkspaceCodeReview');
 			expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('There are no Code Reviews in progress within the current workspace.');
 			expect(vscode.window.showQuickPick).not.toHaveBeenCalled();
 		});
@@ -1174,17 +1174,17 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.resumeWorkspaceCodeReview');
+			vscode.commands.executeCommand('git-graph-plus.resumeWorkspaceCodeReview');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.resumeWorkspaceCodeReview');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.resumeWorkspaceCodeReview');
 				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('An unexpected error occurred while running the command "Resume a specific Code Review in Workspace...".');
 			});
 		});
 	});
 
-	describe('git-graph.version', () => {
+	describe('git-graph-plus.version', () => {
 		let spyOnCopyToClipboard: jest.SpyInstance, spyOnGetExtensionVersion: jest.SpyInstance, spyOnOsType: jest.SpyInstance, spyOnOsArch: jest.SpyInstance, spyOnOsRelease: jest.SpyInstance;
 		beforeAll(() => {
 			spyOnCopyToClipboard = jest.spyOn(utils, 'copyToClipboard');
@@ -1204,11 +1204,11 @@ describe('CommandManager', () => {
 			spyOnOsRelease.mockReturnValueOnce('Z');
 
 			// Run
-			vscode.commands.executeCommand('git-graph.version');
+			vscode.commands.executeCommand('git-graph-plus.version');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.version');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.version');
 				expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Git Graph: 1.27.0\nVisual Studio Code: 1.51.0\nOS: X Y Z\nGit: 2.25.0', { modal: true }, 'Copy');
 				expect(spyOnCopyToClipboard).toHaveBeenCalledWith('Git Graph: 1.27.0\nVisual Studio Code: 1.51.0\nOS: X Y Z\nGit: 2.25.0');
 			});
@@ -1224,11 +1224,11 @@ describe('CommandManager', () => {
 			spyOnOsRelease.mockReturnValueOnce('Z');
 
 			// Run
-			vscode.commands.executeCommand('git-graph.version');
+			vscode.commands.executeCommand('git-graph-plus.version');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.version');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.version');
 				expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Git Graph: 1.27.0\nVisual Studio Code: 1.51.0\nOS: X Y Z\nGit: (none)', { modal: true }, 'Copy');
 				expect(spyOnCopyToClipboard).not.toHaveBeenCalled();
 			});
@@ -1240,11 +1240,11 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			vscode.commands.executeCommand('git-graph.version');
+			vscode.commands.executeCommand('git-graph-plus.version');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.version');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.version');
 				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('An unexpected error occurred while retrieving version information.');
 			});
 		});
@@ -1260,11 +1260,11 @@ describe('CommandManager', () => {
 			spyOnOsRelease.mockReturnValueOnce('Z');
 
 			// Run
-			vscode.commands.executeCommand('git-graph.version');
+			vscode.commands.executeCommand('git-graph-plus.version');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.version');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.version');
 				expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Git Graph: 1.27.0\nVisual Studio Code: 1.51.0\nOS: X Y Z\nGit: 2.25.0', { modal: true }, 'Copy');
 				expect(spyOnCopyToClipboard).toHaveBeenCalledWith('Git Graph: 1.27.0\nVisual Studio Code: 1.51.0\nOS: X Y Z\nGit: 2.25.0');
 				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('error message');
@@ -1280,18 +1280,18 @@ describe('CommandManager', () => {
 			spyOnOsRelease.mockReturnValueOnce('Z');
 
 			// Run
-			vscode.commands.executeCommand('git-graph.version');
+			vscode.commands.executeCommand('git-graph-plus.version');
 
 			// Assert
 			await waitForExpect(() => {
-				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.version');
+				expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.version');
 				expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Git Graph: 1.27.0\nVisual Studio Code: 1.51.0\nOS: X Y Z\nGit: 2.25.0', { modal: true }, 'Copy');
 				expect(spyOnCopyToClipboard).not.toHaveBeenCalled();
 			});
 		});
 	});
 
-	describe('git-graph.openFile', () => {
+	describe('git-graph-plus.openFile', () => {
 		let spyOnOpenFile: jest.SpyInstance;
 		beforeAll(() => {
 			spyOnOpenFile = jest.spyOn(utils, 'openFile');
@@ -1301,10 +1301,10 @@ describe('CommandManager', () => {
 			spyOnOpenFile.mockResolvedValueOnce(null);
 
 			// Run
-			await vscode.commands.executeCommand('git-graph.openFile', encodeDiffDocUri('/path/to/repo', 'subfolder/modified.txt', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', GitFileStatus.Modified, DiffSide.New));
+			await vscode.commands.executeCommand('git-graph-plus.openFile', encodeDiffDocUri('/path/to/repo', 'subfolder/modified.txt', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', GitFileStatus.Modified, DiffSide.New));
 
 			// Assert
-			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.openFile');
+			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.openFile');
 			expect(spyOnOpenFile).toHaveBeenCalledWith('/path/to/repo', 'subfolder/modified.txt', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', dataSource, vscode.ViewColumn.Active);
 		});
 
@@ -1313,10 +1313,10 @@ describe('CommandManager', () => {
 			spyOnOpenFile.mockResolvedValueOnce(null);
 
 			// Run
-			await vscode.commands.executeCommand('git-graph.openFile');
+			await vscode.commands.executeCommand('git-graph-plus.openFile');
 
 			// Assert
-			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.openFile');
+			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.openFile');
 			expect(spyOnOpenFile).toHaveBeenCalledWith('/path/to/repo', 'subfolder/modified.txt', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', dataSource, vscode.ViewColumn.Active);
 		});
 
@@ -1325,10 +1325,10 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			await vscode.commands.executeCommand('git-graph.openFile');
+			await vscode.commands.executeCommand('git-graph-plus.openFile');
 
 			// Assert
-			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.openFile');
+			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.openFile');
 			expect(spyOnOpenFile).not.toHaveBeenCalled();
 			expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Unable to Open File: The command was not called with the required arguments.');
 		});
@@ -1338,10 +1338,10 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			await vscode.commands.executeCommand('git-graph.openFile');
+			await vscode.commands.executeCommand('git-graph-plus.openFile');
 
 			// Assert
-			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.openFile');
+			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.openFile');
 			expect(spyOnOpenFile).not.toHaveBeenCalled();
 			expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Unable to Open File: The command was not called with the required arguments.');
 		});
@@ -1352,10 +1352,10 @@ describe('CommandManager', () => {
 			vscode.window.showErrorMessage.mockResolvedValueOnce(null);
 
 			// Run
-			await vscode.commands.executeCommand('git-graph.openFile');
+			await vscode.commands.executeCommand('git-graph-plus.openFile');
 
 			// Assert
-			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph.openFile');
+			expect(spyOnLog).toHaveBeenCalledWith('Command Invoked: git-graph-plus.openFile');
 			expect(spyOnOpenFile).toHaveBeenCalledWith('/path/to/repo', 'subfolder/modified.txt', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', dataSource, vscode.ViewColumn.Active);
 			expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('Unable to Open File: Error Message');
 		});

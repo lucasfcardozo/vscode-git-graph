@@ -50,7 +50,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.workspace.registerTextDocumentContentProvider(DiffDocProvider.scheme, diffDocProvider),
 		vscode.workspace.onDidChangeConfiguration((event) => {
-			if (event.affectsConfiguration('git-graph')) {
+			if (event.affectsConfiguration('git-graph-plus')) {
 				configurationEmitter.emit(event);
 			} else if (event.affectsConfiguration('git.path')) {
 				const paths = getConfig().gitPaths;

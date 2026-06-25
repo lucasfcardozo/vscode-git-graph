@@ -87,7 +87,7 @@ export class GitGraphView extends Disposable {
 		this.loadViewTo = loadViewTo;
 
 		const config = getConfig();
-		this.panel = vscode.window.createWebviewPanel('git-graph', 'Git Graph', column || vscode.ViewColumn.One, {
+		this.panel = vscode.window.createWebviewPanel('git-graph-plus', 'Git Graph', column || vscode.ViewColumn.One, {
 			enableScripts: true,
 			localResourceRoots: [vscode.Uri.file(path.join(extensionPath, 'media'))],
 			retainContextWhenHidden: config.retainContextWhenHidden
@@ -770,7 +770,7 @@ export class GitGraphView extends Disposable {
 			body = `<body class="unableToLoad">
 			<h2>Unable to load Git Graph</h2>
 			<p class="unableToLoadMessage">No Git repositories were found in the current workspace when it was last scanned by Git Graph.</p>
-			<p>If your repositories are in subfolders of the open workspace folder(s), make sure you have set the Git Graph Setting "git-graph.maxDepthOfRepoSearch" appropriately (read the <a href="https://github.com/mhutchie/vscode-git-graph/wiki/Extension-Settings#max-depth-of-repo-search" target="_blank">documentation</a> for more information).</p>
+			<p>If your repositories are in subfolders of the open workspace folder(s), make sure you have set the Git Graph Setting "git-graph-plus.maxDepthOfRepoSearch" appropriately (read the <a href="https://github.com/mhutchie/vscode-git-graph/wiki/Extension-Settings#max-depth-of-repo-search" target="_blank">documentation</a> for more information).</p>
 			<p><div id="rescanForReposBtn" class="roundedBtn">Re-scan the current workspace for repositories</div></p>
 			<script nonce="${nonce}">(function(){ var api = acquireVsCodeApi(); document.getElementById('rescanForReposBtn').addEventListener('click', function(){ api.postMessage({command: 'rescanForRepos'}); }); })();</script>
 			</body>`;

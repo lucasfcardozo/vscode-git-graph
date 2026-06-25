@@ -221,7 +221,7 @@ describe('DataSource', () => {
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['reflog', '--format=%HXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%PXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%gDXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%anXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%aeXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%atXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%s', 'refs/stash', '--'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
-		it('Should return the repository info (using git-graph.date.type)', async () => {
+		it('Should return the repository info (using git-graph-plus.date.type)', async () => {
 			// Setup
 			mockGitSuccessOnce(
 				'* develop\n' +
@@ -236,7 +236,7 @@ describe('DataSource', () => {
 
 			// Run
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.date.type'
+				affectsConfiguration: (section) => section === 'git-graph-plus.date.type'
 			});
 			const result = await dataSource.getRepoInfo('/path/to/repo', false, true, []);
 
@@ -253,7 +253,7 @@ describe('DataSource', () => {
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['reflog', '--format=%HXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%PXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%gDXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%anXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%aeXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%ctXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%s', 'refs/stash', '--'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
-		it('Should return the repository info (using git-graph.dateType)', async () => {
+		it('Should return the repository info (using git-graph-plus.dateType)', async () => {
 			// Setup
 			mockGitSuccessOnce(
 				'* develop\n' +
@@ -268,7 +268,7 @@ describe('DataSource', () => {
 
 			// Run
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.dateType'
+				affectsConfiguration: (section) => section === 'git-graph-plus.dateType'
 			});
 			const result = await dataSource.getRepoInfo('/path/to/repo', false, true, []);
 
@@ -285,7 +285,7 @@ describe('DataSource', () => {
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['reflog', '--format=%HXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%PXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%gDXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%anXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%aeXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%ctXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%s', 'refs/stash', '--'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
-		it('Should return the repository info (using git-graph.repository.useMailmap)', async () => {
+		it('Should return the repository info (using git-graph-plus.repository.useMailmap)', async () => {
 			// Setup
 			mockGitSuccessOnce(
 				'* develop\n' +
@@ -300,7 +300,7 @@ describe('DataSource', () => {
 
 			// Run
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.repository.useMailmap'
+				affectsConfiguration: (section) => section === 'git-graph-plus.repository.useMailmap'
 			});
 			const result = await dataSource.getRepoInfo('/path/to/repo', false, true, []);
 
@@ -317,7 +317,7 @@ describe('DataSource', () => {
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['reflog', '--format=%HXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%PXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%gDXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%aNXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%aEXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%atXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb%s', 'refs/stash', '--'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
-		it('Should return the repository info (using git-graph.useMailmap)', async () => {
+		it('Should return the repository info (using git-graph-plus.useMailmap)', async () => {
 			// Setup
 			mockGitSuccessOnce(
 				'* develop\n' +
@@ -332,7 +332,7 @@ describe('DataSource', () => {
 
 			// Run
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.useMailmap'
+				affectsConfiguration: (section) => section === 'git-graph-plus.useMailmap'
 			});
 			const result = await dataSource.getRepoInfo('/path/to/repo', false, true, []);
 
@@ -2397,7 +2397,7 @@ describe('DataSource', () => {
 				'user.name\nLocal Name\0' +
 				'user.email\nunused@mhutchie.com\0' +
 				'user.email\nlocal@mhutchie.com\0' +
-				'remote.origin.url\nhttps://github.com/mhutchie/vscode-git-graph.git\0' +
+				'remote.origin.url\nhttps://github.com/mhutchie/vscode-git-graph-plus.git\0' +
 				'remote.origin.pushurl\nhttps://github.com/mhutchie/vscode-git-graph-push.git\0' +
 				'remote.origin.fetch\n+refs/heads/*:refs/remotes/origin/*\0' +
 				'branch.master.remote\norigin\0' +
@@ -2443,7 +2443,7 @@ describe('DataSource', () => {
 					remotes: [
 						{
 							name: 'origin',
-							url: 'https://github.com/mhutchie/vscode-git-graph.git',
+							url: 'https://github.com/mhutchie/vscode-git-graph-plus.git',
 							pushUrl: 'https://github.com/mhutchie/vscode-git-graph-push.git'
 						}
 					],
@@ -2473,7 +2473,7 @@ describe('DataSource', () => {
 			);
 			mockGitSuccessOnce(
 				'user.email\nlocal@mhutchie.com\0' +
-				'remote.origin.url\nhttps://github.com/mhutchie/vscode-git-graph.git\0'
+				'remote.origin.url\nhttps://github.com/mhutchie/vscode-git-graph-plus.git\0'
 			);
 			mockGitSuccessOnce(
 				'user.name\nGlobal Name\0'
@@ -2492,7 +2492,7 @@ describe('DataSource', () => {
 					remotes: [
 						{
 							name: 'origin',
-							url: 'https://github.com/mhutchie/vscode-git-graph.git',
+							url: 'https://github.com/mhutchie/vscode-git-graph-plus.git',
 							pushUrl: null
 						}
 					],
@@ -2566,7 +2566,7 @@ describe('DataSource', () => {
 				'user.name\nLocal\r\nMultiline\nName\0' +
 				'user.email\nunused@mhutchie.com\0' +
 				'user.email\nlocal@mhutchie.com\0' +
-				'remote.origin.url\nhttps://github.com/mhutchie/vscode-git-graph.git\0' +
+				'remote.origin.url\nhttps://github.com/mhutchie/vscode-git-graph-plus.git\0' +
 				'remote.origin.pushurl\nhttps://github.com/mhutchie/vscode-git-graph-push.git\0' +
 				'remote.origin.fetch\n+refs/heads/*:refs/remotes/origin/*\0'
 			);
@@ -2585,7 +2585,7 @@ describe('DataSource', () => {
 					remotes: [
 						{
 							name: 'origin',
-							url: 'https://github.com/mhutchie/vscode-git-graph.git',
+							url: 'https://github.com/mhutchie/vscode-git-graph-plus.git',
 							pushUrl: 'https://github.com/mhutchie/vscode-git-graph-push.git'
 						}
 					],
@@ -2635,7 +2635,7 @@ describe('DataSource', () => {
 				'user.name\nLocal Name\0' +
 				'user.email\nunused@mhutchie.com\0' +
 				'user.email\nlocal@mhutchie.com\0' +
-				'remote.origin.url\nhttps://github.com/mhutchie/vscode-git-graph.git\0' +
+				'remote.origin.url\nhttps://github.com/mhutchie/vscode-git-graph-plus.git\0' +
 				'remote.origin.pushurl\nhttps://github.com/mhutchie/vscode-git-graph-push.git\0' +
 				'remote.origin.fetch\n+refs/heads/*:refs/remotes/origin/*\0'
 			);
@@ -2761,7 +2761,7 @@ describe('DataSource', () => {
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['diff-tree', '--numstat', '-r', '--root', '--find-renames', '--diff-filter=AMDR', '-z', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
-		it('Should return the commit details (using git-graph.repository.commits.showSignatureStatus)', async () => {
+		it('Should return the commit details (using git-graph-plus.repository.commits.showSignatureStatus)', async () => {
 			// Setup
 			mockGitSuccessOnce('1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2bXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPba1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbTest AuthorXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbtest-author@mhutchie.comXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb1587559258XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbTest CommitterXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbtest-committer@mhutchie.comXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb1587559259XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbGXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbTest Signer <test-signer@mhutchie.com> XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb0123456789ABCDEFXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbCommit Message.\r\nSecond Line.');
 			mockGitSuccessOnce(['D', 'dir/deleted.txt', 'M', 'dir/modified.txt', 'R100', 'dir/renamed-old.txt', 'dir/renamed-new.txt', ''].join('\0'));
@@ -2773,7 +2773,7 @@ describe('DataSource', () => {
 
 			// Run
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.repository.commits.showSignatureStatus'
+				affectsConfiguration: (section) => section === 'git-graph-plus.repository.commits.showSignatureStatus'
 			});
 			const result = await dataSource.getCommitDetails('/path/to/repo', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', true);
 
@@ -2825,7 +2825,7 @@ describe('DataSource', () => {
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['diff', '--numstat', '--find-renames', '--diff-filter=AMDR', '-z', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b^', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
-		it('Should return the commit details (using git-graph.showSignatureStatus)', async () => {
+		it('Should return the commit details (using git-graph-plus.showSignatureStatus)', async () => {
 			// Setup
 			mockGitSuccessOnce('1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2bXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPba1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbTest AuthorXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbtest-author@mhutchie.comXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb1587559258XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbTest CommitterXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbtest-committer@mhutchie.comXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb1587559259XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbGXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbTest Signer <test-signer@mhutchie.com> XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb0123456789ABCDEFXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbCommit Message.\r\nSecond Line.');
 			mockGitSuccessOnce(['D', 'dir/deleted.txt', 'M', 'dir/modified.txt', 'R100', 'dir/renamed-old.txt', 'dir/renamed-new.txt', ''].join('\0'));
@@ -2837,7 +2837,7 @@ describe('DataSource', () => {
 
 			// Run
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.showSignatureStatus'
+				affectsConfiguration: (section) => section === 'git-graph-plus.showSignatureStatus'
 			});
 			const result = await dataSource.getCommitDetails('/path/to/repo', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', true);
 
@@ -2946,7 +2946,7 @@ describe('DataSource', () => {
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['diff', '--numstat', '--find-renames', '--diff-filter=AMDR', '-z', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b^', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
-		it('Should return the commit details (using git-graph.repository.useMailmap)', async () => {
+		it('Should return the commit details (using git-graph-plus.repository.useMailmap)', async () => {
 			// Setup
 			mockGitSuccessOnce('1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2bXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPba1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbTest AuthorXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbtest-author@mhutchie.comXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb1587559258XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbTest CommitterXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbtest-committer@mhutchie.comXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPb1587559259XX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbXX7Nal-YARtTpjCikii9nJxER19D6diSyk-AWkPbCommit Message.\r\nSecond Line.');
 			mockGitSuccessOnce(['D', 'dir/deleted.txt', 'M', 'dir/modified.txt', 'R100', 'dir/renamed-old.txt', 'dir/renamed-new.txt', ''].join('\0'));
@@ -2957,7 +2957,7 @@ describe('DataSource', () => {
 
 			// Run
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.repository.useMailmap'
+				affectsConfiguration: (section) => section === 'git-graph-plus.repository.useMailmap'
 			});
 			const result = await dataSource.getCommitDetails('/path/to/repo', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b', true);
 
@@ -3744,7 +3744,7 @@ describe('DataSource', () => {
 			// Assert
 			expect(result.toString()).toBe('File contents.\n');
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['show', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b:subdirectory/file.txt'], expect.objectContaining({ cwd: '/path/to/repo' }));
-			expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith('git-graph', {
+			expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith('git-graph-plus', {
 				scheme: 'file',
 				authority: '',
 				path: '/path/to/repo',
@@ -3766,7 +3766,7 @@ describe('DataSource', () => {
 			// Assert
 			expect(result.toString()).toBe('File contents.\n');
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['show', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b:subdirectory/file.txt'], expect.objectContaining({ cwd: '/path/to/repo' }));
-			expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith('git-graph', {
+			expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith('git-graph-plus', {
 				scheme: 'file',
 				authority: '',
 				path: '/path/to/repo',
@@ -3818,13 +3818,13 @@ describe('DataSource', () => {
 	describe('getRemoteUrl', () => {
 		it('Should return the url of the remote', async () => {
 			// Setup
-			mockGitSuccessOnce('https://github.com/mhutchie/vscode-git-graph.git\n');
+			mockGitSuccessOnce('https://github.com/mhutchie/vscode-git-graph-plus.git\n');
 
 			// Run
 			const result = await dataSource.getRemoteUrl('/path/to/repo', 'origin');
 
 			// Assert
-			expect(result).toBe('https://github.com/mhutchie/vscode-git-graph.git');
+			expect(result).toBe('https://github.com/mhutchie/vscode-git-graph-plus.git');
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['config', '--get', 'remote.origin.url'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
@@ -4420,12 +4420,12 @@ describe('DataSource', () => {
 			mockGitSuccessOnce();
 
 			// Run
-			const result = await dataSource.addRemote('/path/to/repo', 'origin', 'https://github.com/mhutchie/vscode-git-graph.git', null, false);
+			const result = await dataSource.addRemote('/path/to/repo', 'origin', 'https://github.com/mhutchie/vscode-git-graph-plus.git', null, false);
 
 			// Assert
 			expect(result).toBe(null);
 			expect(spyOnSpawn).toBeCalledTimes(1);
-			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'add', 'origin', 'https://github.com/mhutchie/vscode-git-graph.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'add', 'origin', 'https://github.com/mhutchie/vscode-git-graph-plus.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
 		it('Should add a remote (with a push url)', async () => {
@@ -4434,13 +4434,13 @@ describe('DataSource', () => {
 			mockGitSuccessOnce();
 
 			// Run
-			const result = await dataSource.addRemote('/path/to/repo', 'origin', 'https://github.com/mhutchie/vscode-git-graph.git', 'https://github.com/mhutchie/vscode-git-graph.git', false);
+			const result = await dataSource.addRemote('/path/to/repo', 'origin', 'https://github.com/mhutchie/vscode-git-graph-plus.git', 'https://github.com/mhutchie/vscode-git-graph-plus.git', false);
 
 			// Assert
 			expect(result).toBe(null);
 			expect(spyOnSpawn).toBeCalledTimes(2);
-			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'add', 'origin', 'https://github.com/mhutchie/vscode-git-graph.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
-			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'set-url', 'origin', '--push', 'https://github.com/mhutchie/vscode-git-graph.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'add', 'origin', 'https://github.com/mhutchie/vscode-git-graph-plus.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'set-url', 'origin', '--push', 'https://github.com/mhutchie/vscode-git-graph-plus.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
 		it('Should add and fetch a remote', async () => {
@@ -4449,12 +4449,12 @@ describe('DataSource', () => {
 			mockGitSuccessOnce();
 
 			// Run
-			const result = await dataSource.addRemote('/path/to/repo', 'origin', 'https://github.com/mhutchie/vscode-git-graph.git', null, true);
+			const result = await dataSource.addRemote('/path/to/repo', 'origin', 'https://github.com/mhutchie/vscode-git-graph-plus.git', null, true);
 
 			// Assert
 			expect(result).toBe(null);
 			expect(spyOnSpawn).toBeCalledTimes(2);
-			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'add', 'origin', 'https://github.com/mhutchie/vscode-git-graph.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'add', 'origin', 'https://github.com/mhutchie/vscode-git-graph-plus.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['fetch', 'origin'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
@@ -4463,7 +4463,7 @@ describe('DataSource', () => {
 			mockGitThrowingErrorOnce();
 
 			// Run
-			const result = await dataSource.addRemote('/path/to/repo', 'origin', 'https://github.com/mhutchie/vscode-git-graph.git', null, false);
+			const result = await dataSource.addRemote('/path/to/repo', 'origin', 'https://github.com/mhutchie/vscode-git-graph-plus.git', null, false);
 
 			// Assert
 			expect(result).toBe('error message');
@@ -4475,7 +4475,7 @@ describe('DataSource', () => {
 			mockGitThrowingErrorOnce();
 
 			// Run
-			const result = await dataSource.addRemote('/path/to/repo', 'origin', 'https://github.com/mhutchie/vscode-git-graph.git', 'https://github.com/mhutchie/vscode-git-graph.git', true);
+			const result = await dataSource.addRemote('/path/to/repo', 'origin', 'https://github.com/mhutchie/vscode-git-graph-plus.git', 'https://github.com/mhutchie/vscode-git-graph-plus.git', true);
 
 			// Assert
 			expect(result).toBe('error message');
@@ -4526,11 +4526,11 @@ describe('DataSource', () => {
 			mockGitSuccessOnce();
 
 			// Run
-			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', 'https://github.com/mhutchie/vscode-git-graph.git', null, null, null);
+			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', 'https://github.com/mhutchie/vscode-git-graph-plus.git', null, null, null);
 
 			// Assert
 			expect(result).toBe(null);
-			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'set-url', 'origin', '--delete', 'https://github.com/mhutchie/vscode-git-graph.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'set-url', 'origin', '--delete', 'https://github.com/mhutchie/vscode-git-graph-plus.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
 		it('Should add a url to the remote', async () => {
@@ -4538,11 +4538,11 @@ describe('DataSource', () => {
 			mockGitSuccessOnce();
 
 			// Run
-			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', null, 'https://github.com/mhutchie/vscode-git-graph.git', null, null);
+			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', null, 'https://github.com/mhutchie/vscode-git-graph-plus.git', null, null);
 
 			// Assert
 			expect(result).toBe(null);
-			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'set-url', 'origin', '--add', 'https://github.com/mhutchie/vscode-git-graph.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'set-url', 'origin', '--add', 'https://github.com/mhutchie/vscode-git-graph-plus.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
 		it('Should update the url of a the remote', async () => {
@@ -4562,11 +4562,11 @@ describe('DataSource', () => {
 			mockGitSuccessOnce();
 
 			// Run
-			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', null, null, 'https://github.com/mhutchie/vscode-git-graph.git', null);
+			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', null, null, 'https://github.com/mhutchie/vscode-git-graph-plus.git', null);
 
 			// Assert
 			expect(result).toBe(null);
-			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'set-url', '--push', 'origin', '--delete', 'https://github.com/mhutchie/vscode-git-graph.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'set-url', '--push', 'origin', '--delete', 'https://github.com/mhutchie/vscode-git-graph-plus.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
 		it('Should add a push url to the remote', async () => {
@@ -4574,11 +4574,11 @@ describe('DataSource', () => {
 			mockGitSuccessOnce();
 
 			// Run
-			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', null, null, null, 'https://github.com/mhutchie/vscode-git-graph.git');
+			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', null, null, null, 'https://github.com/mhutchie/vscode-git-graph-plus.git');
 
 			// Assert
 			expect(result).toBe(null);
-			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'set-url', '--push', 'origin', '--add', 'https://github.com/mhutchie/vscode-git-graph.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['remote', 'set-url', '--push', 'origin', '--add', 'https://github.com/mhutchie/vscode-git-graph-plus.git'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
 		it('Should update the push url of a the remote', async () => {
@@ -4609,7 +4609,7 @@ describe('DataSource', () => {
 			mockGitThrowingErrorOnce();
 
 			// Run
-			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', null, 'https://github.com/mhutchie/vscode-git-graph.git', null, null);
+			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', null, 'https://github.com/mhutchie/vscode-git-graph-plus.git', null, null);
 
 			// Assert
 			expect(result).toBe('error message');
@@ -4620,7 +4620,7 @@ describe('DataSource', () => {
 			mockGitThrowingErrorOnce();
 
 			// Run
-			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', null, null, null, 'https://github.com/mhutchie/vscode-git-graph.git');
+			const result = await dataSource.editRemote('/path/to/repo', 'origin', 'origin', null, null, null, 'https://github.com/mhutchie/vscode-git-graph-plus.git');
 
 			// Assert
 			expect(result).toBe('error message');
@@ -6794,7 +6794,7 @@ describe('DataSource', () => {
 
 			// Run
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.commitDetailsView.autoCenter'
+				affectsConfiguration: (section) => section === 'git-graph-plus.commitDetailsView.autoCenter'
 			});
 
 			// Assert

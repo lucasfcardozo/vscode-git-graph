@@ -53,7 +53,7 @@ export class RepoManager extends Disposable {
 		this.ignoredRepos = extensionState.getIgnoredRepos();
 		this.maxDepthOfRepoSearch = getConfig().maxDepthOfRepoSearch;
 
-		this.configWatcher = vscode.workspace.createFileSystemWatcher('**/.vscode/vscode-git-graph.json');
+		this.configWatcher = vscode.workspace.createFileSystemWatcher('**/.vscode/vscode-git-graph-plus.json');
 		this.configWatcher.onDidCreate(this.onConfigWatcherCreateOrChange.bind(this));
 		this.configWatcher.onDidChange(this.onConfigWatcherCreateOrChange.bind(this));
 
@@ -98,7 +98,7 @@ export class RepoManager extends Disposable {
 
 			// Monitor changes to the maxDepthOfRepoSearch Extension Setting, and trigger a new search if needed
 			onDidChangeConfiguration((event) => {
-				if (event.affectsConfiguration('git-graph.maxDepthOfRepoSearch')) {
+				if (event.affectsConfiguration('git-graph-plus.maxDepthOfRepoSearch')) {
 					this.maxDepthOfRepoSearchChanged();
 				}
 			}),
@@ -136,7 +136,7 @@ export class RepoManager extends Disposable {
 	}
 
 	/**
-	 * Apply the new value of `git-graph.maxDepthOfRepoSearch` to the RepoManager.
+	 * Apply the new value of `git-graph-plus.maxDepthOfRepoSearch` to the RepoManager.
 	 */
 	private maxDepthOfRepoSearchChanged() {
 		const newDepth = getConfig().maxDepthOfRepoSearch;
@@ -661,7 +661,7 @@ export class RepoManager extends Disposable {
 						return true;
 					}
 				} else {
-					showErrorMessage('The value for "' + validationError + '" in the configuration file "' + getPathFromStr(path.join(repo, '.vscode', 'vscode-git-graph.json')) + '" is invalid.');
+					showErrorMessage('The value for "' + validationError + '" in the configuration file "' + getPathFromStr(path.join(repo, '.vscode', 'vscode-git-graph-plus.json')) + '" is invalid.');
 				}
 			}
 		} catch (_) { }
@@ -803,7 +803,7 @@ export namespace ExternalRepoConfig {
  */
 function readExternalConfigFile(repo: string) {
 	return new Promise<Readonly<ExternalRepoConfig.File> | null>((resolve) => {
-		fs.readFile(path.join(repo, '.vscode', 'vscode-git-graph.json'), (err, data) => {
+		fs.readFile(path.join(repo, '.vscode', 'vscode-git-graph-plus.json'), (err, data) => {
 			if (err) {
 				resolve(null);
 			} else {
@@ -829,7 +829,7 @@ function writeExternalConfigFile(repo: string, file: ExternalRepoConfig.File) {
 		const vscodePath = path.join(repo, '.vscode');
 		fs.mkdir(vscodePath, (err) => {
 			if (!err || err.code === 'EEXIST') {
-				const configPath = path.join(vscodePath, 'vscode-git-graph.json');
+				const configPath = path.join(vscodePath, 'vscode-git-graph-plus.json');
 				fs.writeFile(configPath, JSON.stringify(file, null, 4), (err) => {
 					if (err) {
 						reject('Failed to write the Git Graph Repository Configuration File to "' + getPathFromStr(configPath) + '".');

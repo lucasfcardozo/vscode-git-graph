@@ -73,7 +73,7 @@ describe('RepoManager', () => {
 
 		// Assert
 		expect(repoManager['disposables']).toHaveLength(8);
-		expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith('**/.vscode/vscode-git-graph.json');
+		expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith('**/.vscode/vscode-git-graph-plus.json');
 
 		// Run
 		repoManager.dispose();
@@ -353,7 +353,7 @@ describe('RepoManager', () => {
 			// Run
 			vscode.mockExtensionSettingReturnValue('maxDepthOfRepoSearch', 0);
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.maxDepthOfRepoSearch'
+				affectsConfiguration: (section) => section === 'git-graph-plus.maxDepthOfRepoSearch'
 			});
 
 			// Assert
@@ -372,7 +372,7 @@ describe('RepoManager', () => {
 
 			// Run
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.date.type'
+				affectsConfiguration: (section) => section === 'git-graph-plus.date.type'
 			});
 
 			// Assert
@@ -634,7 +634,7 @@ describe('RepoManager', () => {
 				}
 			]);
 			expect(spyOnReadFile).toHaveBeenCalledTimes(1);
-			expect(utils.getPathFromStr(spyOnReadFile.mock.calls[0][0])).toStrictEqual('/path/to/workspace-folder2/repo/.vscode/vscode-git-graph.json');
+			expect(utils.getPathFromStr(spyOnReadFile.mock.calls[0][0])).toStrictEqual('/path/to/workspace-folder2/repo/.vscode/vscode-git-graph-plus.json');
 
 			// Teardown
 			repoManager.dispose();
@@ -1310,7 +1310,7 @@ describe('RepoManager', () => {
 			// Run
 			vscode.mockExtensionSettingReturnValue('maxDepthOfRepoSearch', 1);
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.maxDepthOfRepoSearch'
+				affectsConfiguration: (section) => section === 'git-graph-plus.maxDepthOfRepoSearch'
 			});
 			await waitForExpect(() => expect(spyOnLog).toHaveBeenCalledWith('Added new repo: /path/to/workspace-folder1/repo'));
 
@@ -1351,7 +1351,7 @@ describe('RepoManager', () => {
 			// Run
 			vscode.mockExtensionSettingReturnValue('maxDepthOfRepoSearch', 1);
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.maxDepthOfRepoSearch'
+				affectsConfiguration: (section) => section === 'git-graph-plus.maxDepthOfRepoSearch'
 			});
 			await waitForExpect(() => expect(spyOnLog).toHaveBeenCalledWith('Completed searching workspace for new repos'));
 
@@ -1382,7 +1382,7 @@ describe('RepoManager', () => {
 			// Run
 			vscode.mockExtensionSettingReturnValue('maxDepthOfRepoSearch', 1);
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.maxDepthOfRepoSearch'
+				affectsConfiguration: (section) => section === 'git-graph-plus.maxDepthOfRepoSearch'
 			});
 			await waitForExpect(() => expect(spyOnLog).toHaveBeenCalledWith('Completed searching workspace for new repos'));
 
@@ -1412,7 +1412,7 @@ describe('RepoManager', () => {
 			// Run
 			vscode.mockExtensionSettingReturnValue('maxDepthOfRepoSearch', 1);
 			onDidChangeConfiguration.emit({
-				affectsConfiguration: (section) => section === 'git-graph.maxDepthOfRepoSearch'
+				affectsConfiguration: (section) => section === 'git-graph-plus.maxDepthOfRepoSearch'
 			});
 			await waitForExpect(() => expect(spyOnLog).toHaveBeenCalledWith('Completed searching workspace for new repos'));
 
@@ -2024,7 +2024,7 @@ describe('RepoManager', () => {
 				await repoManager.registerRepo('/path/to/workspace-folder1/repo', false);
 
 				// Assert
-				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('The value for "' + fileKey + '" in the configuration file "/path/to/workspace-folder1/repo/.vscode/vscode-git-graph.json" is invalid.');
+				expect(vscode.window.showErrorMessage).toHaveBeenCalledWith('The value for "' + fileKey + '" in the configuration file "/path/to/workspace-folder1/repo/.vscode/vscode-git-graph-plus.json" is invalid.');
 
 				// Teardown
 				repoManager.dispose();
@@ -2124,7 +2124,7 @@ describe('RepoManager', () => {
 			vscode.window.showInformationMessage.mockResolvedValueOnce(null);
 
 			// Run
-			emitOnDidCreate(vscode.Uri.file('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json'));
+			emitOnDidCreate(vscode.Uri.file('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json'));
 
 			// Assert
 			await waitForExpect(() => expect(vscode.window.showInformationMessage).toHaveBeenCalledTimes(2));
@@ -2149,7 +2149,7 @@ describe('RepoManager', () => {
 			vscode.window.showInformationMessage.mockResolvedValueOnce(null);
 
 			// Run
-			emitOnDidChange(vscode.Uri.file('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json'));
+			emitOnDidChange(vscode.Uri.file('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json'));
 
 			// Assert
 			await waitForExpect(() => expect(vscode.window.showInformationMessage).toHaveBeenCalledTimes(2));
@@ -2173,7 +2173,7 @@ describe('RepoManager', () => {
 			spyOnSaveRepos.mockClear();
 
 			// Run
-			emitOnDidChange(vscode.Uri.file('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json'));
+			emitOnDidChange(vscode.Uri.file('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json'));
 
 			// Assert
 			await waitForExpect(() => expect(spyOnIsKnownRepo).toHaveBeenCalledWith('/path/to/workspace-folder1/repo1'));
@@ -2198,7 +2198,7 @@ describe('RepoManager', () => {
 			spyOnSaveRepos.mockClear();
 
 			// Run
-			emitOnDidChange(vscode.Uri.file('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json'));
+			emitOnDidChange(vscode.Uri.file('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json'));
 
 			// Assert
 			await waitForExpect(() => expect(spyOnIsKnownRepo).toHaveBeenCalledWith('/path/to/workspace-folder1/repo1'));
@@ -2215,7 +2215,7 @@ describe('RepoManager', () => {
 			const spyOnBufferedQueueEnqueue = jest.spyOn(repoManager['checkRepoConfigQueue'], 'enqueue');
 
 			// Run
-			emitOnDidChange(vscode.Uri.file('/path/to/workspace-folder1/repo2/.vscode/vscode-git-graph.json'));
+			emitOnDidChange(vscode.Uri.file('/path/to/workspace-folder1/repo2/.vscode/vscode-git-graph-plus.json'));
 
 			// Assert
 			expect(spyOnBufferedQueueEnqueue).not.toHaveBeenCalled();
@@ -2238,11 +2238,11 @@ describe('RepoManager', () => {
 			// Assert
 			expect(result).toBe(null);
 			expect(utils.getPathFromStr(spyOnMkdir.mock.calls[0][0])).toBe('/path/to/workspace-folder1/repo1/.vscode');
-			expect(utils.getPathFromStr(spyOnWriteFile.mock.calls[0][0])).toBe('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json');
+			expect(utils.getPathFromStr(spyOnWriteFile.mock.calls[0][0])).toBe('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json');
 			expect(JSON.parse(spyOnWriteFile.mock.calls[0][1])).toStrictEqual({
 				'exportedAt': 1587559258000
 			});
-			expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Successfully exported the Git Graph Repository Configuration to "/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json".');
+			expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Successfully exported the Git Graph Repository Configuration to "/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json".');
 			expect(spyOnSaveRepos).toHaveBeenCalledWith({
 				'/path/to/workspace-folder1/repo1': {
 					cdvDivider: 0.5,
@@ -2289,11 +2289,11 @@ describe('RepoManager', () => {
 			// Assert
 			expect(result).toBe(null);
 			expect(utils.getPathFromStr(spyOnMkdir.mock.calls[0][0])).toBe('/path/to/workspace-folder1/repo1/.vscode');
-			expect(utils.getPathFromStr(spyOnWriteFile.mock.calls[0][0])).toBe('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json');
+			expect(utils.getPathFromStr(spyOnWriteFile.mock.calls[0][0])).toBe('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json');
 			expect(JSON.parse(spyOnWriteFile.mock.calls[0][1])).toStrictEqual({
 				'exportedAt': 1587559258000
 			});
-			expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Successfully exported the Git Graph Repository Configuration to "/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json".');
+			expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Successfully exported the Git Graph Repository Configuration to "/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json".');
 			expect(spyOnSaveRepos).not.toHaveBeenCalled();
 
 			// Teardown
@@ -2316,11 +2316,11 @@ describe('RepoManager', () => {
 			// Assert
 			expect(result).toBe(null);
 			expect(utils.getPathFromStr(spyOnMkdir.mock.calls[0][0])).toBe('/path/to/workspace-folder1/repo1/.vscode');
-			expect(utils.getPathFromStr(spyOnWriteFile.mock.calls[0][0])).toBe('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json');
+			expect(utils.getPathFromStr(spyOnWriteFile.mock.calls[0][0])).toBe('/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json');
 			expect(JSON.parse(spyOnWriteFile.mock.calls[0][1])).toStrictEqual({
 				'exportedAt': 1587559258000
 			});
-			expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Successfully exported the Git Graph Repository Configuration to "/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json".');
+			expect(vscode.window.showInformationMessage).toHaveBeenCalledWith('Successfully exported the Git Graph Repository Configuration to "/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json".');
 			expect(spyOnSaveRepos).toHaveBeenCalledWith({
 				'/path/to/workspace-folder1/repo1': {
 					cdvDivider: 0.5,
@@ -2381,7 +2381,7 @@ describe('RepoManager', () => {
 			const result = await repoManager.exportRepoConfig('/path/to/workspace-folder1/repo1');
 
 			// Assert
-			expect(result).toBe('Failed to write the Git Graph Repository Configuration File to "/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph.json".');
+			expect(result).toBe('Failed to write the Git Graph Repository Configuration File to "/path/to/workspace-folder1/repo1/.vscode/vscode-git-graph-plus.json".');
 			expect(spyOnSaveRepos).not.toHaveBeenCalled();
 
 			// Teardown
