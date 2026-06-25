@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import { AvatarManager } from './avatarManager';
 import { getConfig } from './config';
 import { DataSource, GitCommitDetailsData, GitConfigKey } from './dataSource';
+import { InteractiveRebasePanel } from './interactiveRebase';
 import { ExtensionState } from './extensionState';
 import { Logger } from './logger';
 import { RepoFileWatcher } from './repoFileWatcher';
@@ -215,6 +216,12 @@ export class GitGraphView extends Disposable {
 					errors: errorInfos
 				});
 				break;
+			case 'abortRebase':
+				this.sendMessage({
+					command: 'abortRebase',
+					error: await this.dataSource.abortRebase(msg.repo)
+				});
+				break;
 			case 'checkoutCommit':
 				this.sendMessage({
 					command: 'checkoutCommit',
@@ -259,6 +266,12 @@ export class GitGraphView extends Disposable {
 					...await this.dataSource.getCommitComparison(msg.repo, msg.fromHash, msg.toHash),
 					codeReview: msg.toHash !== UNCOMMITTED ? this.extensionState.getCodeReview(msg.repo, msg.fromHash + '-' + msg.toHash) : null,
 					refresh: msg.refresh
+				});
+				break;
+			case 'continueRebase':
+				this.sendMessage({
+					command: 'continueRebase',
+					error: await this.dataSource.continueRebase(msg.repo)
 				});
 				break;
 			case 'copyFilePath':
@@ -431,7 +444,8 @@ export class GitGraphView extends Disposable {
 					command: 'loadRepoInfo',
 					refreshId: msg.refreshId,
 					...repoInfo,
-					isRepo: isRepo
+					isRepo: isRepo,
+					rebaseInProgress: this.dataSource.checkRebaseInProgress(msg.repo)
 				});
 				if (msg.repo !== this.currentRepo) {
 					this.currentRepo = msg.repo;
@@ -524,12 +538,22 @@ export class GitGraphView extends Disposable {
 				});
 				break;
 			case 'rebase':
-				this.sendMessage({
-					command: 'rebase',
-					actionOn: msg.actionOn,
-					interactive: msg.interactive,
-					error: await this.dataSource.rebase(msg.repo, msg.obj, msg.actionOn, msg.ignoreDate, msg.interactive)
-				});
+				if (msg.interactive) {
+					const launchError = await InteractiveRebasePanel.launch(msg.repo, msg.obj, this.dataSource);
+					this.sendMessage({
+						command: 'rebase',
+						actionOn: msg.actionOn,
+						interactive: true,
+						error: launchError
+					});
+				} else {
+					this.sendMessage({
+						command: 'rebase',
+						actionOn: msg.actionOn,
+						interactive: false,
+						error: await this.dataSource.rebase(msg.repo, msg.obj, msg.actionOn, msg.ignoreDate, false)
+					});
+				}
 				break;
 			case 'renameBranch':
 				this.sendMessage({
@@ -726,6 +750,11 @@ export class GitGraphView extends Disposable {
 					<div id="settingsBtn" title="Repository Settings"></div>
 					<div id="fetchBtn"></div>
 					<div id="refreshBtn"></div>
+				</div>
+				<div id="rebase-banner" style="display:none">
+					<span id="rebase-banner-msg">⚠&nbsp;Rebase in progress</span>
+					<span class="roundedBtn" id="continueRebaseBtn">Continue</span>
+					<span class="roundedBtn" id="abortRebaseBtn">Abort</span>
 				</div>
 				<div id="content">
 					<div id="commitGraph"></div>

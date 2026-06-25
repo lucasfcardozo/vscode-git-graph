@@ -50,6 +50,30 @@ code{
 	position:relative;
 }
 
+#rebase-banner{
+	display:flex;
+	align-items:center;
+	gap:8px;
+	padding:5px 12px;
+	border-bottom:1px solid rgba(128,128,128,0.5);
+	font-size:13px;
+	-webkit-user-select:none;
+	user-select:none;
+}
+#rebase-banner-msg{
+	margin-right:4px;
+}
+#rebase-banner .roundedBtn{
+	display:inline-flex;
+	align-items:center;
+	height:24px;
+	line-height:22px;
+	padding:0 12px;
+	border-radius:12px;
+	cursor:pointer;
+	font-size:12px;
+}
+
 
 /* Overlays */
 

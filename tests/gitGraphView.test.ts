@@ -57,6 +57,7 @@ describe('GitGraphView', () => {
 
 		spyOnGetRepos.mockReturnValue({ '/path/to/repo': mockRepoState() });
 		spyOnIsGitExecutableUnknown.mockReturnValue(false);
+		jest.spyOn(dataSource, 'checkRebaseInProgress').mockReturnValue(false);
 		Object.defineProperty(repoManager, 'onDidChangeRepos', {
 			get: () => onDidChangeRepos.subscribe
 		});
@@ -2354,6 +2355,7 @@ describe('GitGraphView', () => {
 							remotes: getRepoInfoResolvedValue.remotes,
 							stashes: getRepoInfoResolvedValue.stashes,
 							isRepo: true,
+							rebaseInProgress: false,
 							error: getRepoInfoResolvedValue.error
 						}
 					]);
@@ -2403,6 +2405,7 @@ describe('GitGraphView', () => {
 							remotes: getRepoInfoResolvedValue.remotes,
 							stashes: getRepoInfoResolvedValue.stashes,
 							isRepo: true,
+							rebaseInProgress: false,
 							error: getRepoInfoResolvedValue.error
 						}
 					]);
@@ -2453,6 +2456,7 @@ describe('GitGraphView', () => {
 							remotes: getRepoInfoResolvedValue.remotes,
 							stashes: getRepoInfoResolvedValue.stashes,
 							isRepo: true,
+							rebaseInProgress: false,
 							error: getRepoInfoResolvedValue.error
 						}
 					]);
@@ -2503,6 +2507,7 @@ describe('GitGraphView', () => {
 							remotes: getRepoInfoResolvedValue.remotes,
 							stashes: getRepoInfoResolvedValue.stashes,
 							isRepo: false,
+							rebaseInProgress: false,
 							error: null
 						}
 					]);

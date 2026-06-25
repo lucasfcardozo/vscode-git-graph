@@ -947,11 +947,24 @@ export interface ResponseLoadRepoInfo extends ResponseWithErrorInfo {
 	readonly remotes: ReadonlyArray<string>;
 	readonly stashes: ReadonlyArray<GitStash>;
 	readonly isRepo: boolean;
+	readonly rebaseInProgress: boolean;
 }
 
 export interface RequestLoadRepos extends BaseMessage {
 	readonly command: 'loadRepos';
 	readonly check: boolean;
+}
+export interface RequestContinueRebase extends RepoRequest {
+	readonly command: 'continueRebase';
+}
+export interface ResponseContinueRebase extends ResponseWithErrorInfo {
+	readonly command: 'continueRebase';
+}
+export interface RequestAbortRebase extends RepoRequest {
+	readonly command: 'abortRebase';
+}
+export interface ResponseAbortRebase extends ResponseWithErrorInfo {
+	readonly command: 'abortRebase';
 }
 export interface ResponseLoadRepos extends BaseMessage {
 	readonly command: 'loadRepos';
@@ -1251,6 +1264,7 @@ export type RequestMessage =
 	RequestAddRemote
 	| RequestAddTag
 	| RequestApplyStash
+	| RequestAbortRebase
 	| RequestBranchFromStash
 	| RequestCheckoutBranch
 	| RequestCheckoutCommit
@@ -1258,6 +1272,7 @@ export type RequestMessage =
 	| RequestCleanUntrackedFiles
 	| RequestCommitDetails
 	| RequestCompareCommits
+	| RequestContinueRebase
 	| RequestCopyFilePath
 	| RequestCopyToClipboard
 	| RequestCreateArchive
@@ -1356,6 +1371,8 @@ export type ResponseMessage =
 	| ResponsePushBranch
 	| ResponsePushStash
 	| ResponsePushTag
+	| ResponseAbortRebase
+	| ResponseContinueRebase
 	| ResponseRebase
 	| ResponseRefresh
 	| ResponseRenameBranch

@@ -5907,8 +5907,8 @@ describe('DataSource', () => {
 		it('Should launch the interactive rebase of the current branch on a branch in the VS Code editor', async () => {
 			// Setup
 			mockGitSuccessOnce(
-				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0000Commit Message 1\n' +
-				'2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c\u0000Commit Message 2\n'
+				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0001Commit Message 1\u0001Author 1\u00012 days ago\n' +
+				'2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c\u0001Commit Message 2\u0001Author 2\u00013 days ago\n'
 			);
 			mockGitSuccessOnce();
 			vscode.window.showInformationMessage.mockResolvedValueOnce('Start Rebase');
@@ -5922,14 +5922,14 @@ describe('DataSource', () => {
 			expect(vscode.workspace.openTextDocument).toBeCalled();
 			expect(vscode.window.showTextDocument).toBeCalled();
 			expect(vscode.window.showInformationMessage).toBeCalled();
-			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['-c', 'log.showSignature=false', 'log', '--reverse', '--format=%H%x00%s', 'develop..HEAD', '--'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['-c', 'log.showSignature=false', 'log', '--reverse', '--format=%H%x01%s%x01%an%x01%ar', 'develop..HEAD', '--'], expect.objectContaining({ cwd: '/path/to/repo' }));
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['rebase', '--interactive', 'develop'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
 		it('Should launch the interactive rebase of the current branch on a commit in the VS Code editor', async () => {
 			// Setup
 			mockGitSuccessOnce(
-				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0000Commit Message 1\n'
+				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0001Commit Message 1\u0001Author 1\u00012 days ago\n'
 			);
 			mockGitSuccessOnce();
 			vscode.window.showInformationMessage.mockResolvedValueOnce('Start Rebase');
@@ -5940,14 +5940,14 @@ describe('DataSource', () => {
 
 			// Assert
 			expect(result).toBe(null);
-			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['-c', 'log.showSignature=false', 'log', '--reverse', '--format=%H%x00%s', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b..HEAD', '--'], expect.objectContaining({ cwd: '/path/to/repo' }));
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['-c', 'log.showSignature=false', 'log', '--reverse', '--format=%H%x01%s%x01%an%x01%ar', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b..HEAD', '--'], expect.objectContaining({ cwd: '/path/to/repo' }));
 			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['rebase', '--interactive', '1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b'], expect.objectContaining({ cwd: '/path/to/repo' }));
 		});
 
 		it('Should launch the interactive rebase of the current branch on a branch in the VS Code editor (signing the new commits)', async () => {
 			// Setup
 			mockGitSuccessOnce(
-				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0000Commit Message 1\n'
+				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0001Commit Message 1\u0001Author 1\u00012 days ago\n'
 			);
 			mockGitSuccessOnce();
 			vscode.window.showInformationMessage.mockResolvedValueOnce('Start Rebase');
@@ -5964,7 +5964,7 @@ describe('DataSource', () => {
 		it('Should return an error when the interactive rebase is cancelled', async () => {
 			// Setup
 			mockGitSuccessOnce(
-				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0000Commit Message 1\n'
+				'1a2b3c4d5e6f1a2b3c4d5e6f1a2b3c4d5e6f1a2b\u0001Commit Message 1\u0001Author 1\u00012 days ago\n'
 			);
 			vscode.window.showInformationMessage.mockResolvedValueOnce(undefined);
 			vscode.mockExtensionSettingReturnValue('repository.sign.commits', false);
