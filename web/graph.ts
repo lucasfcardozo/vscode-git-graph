@@ -295,12 +295,65 @@ class Vertex {
 
 	/* Rendering */
 
-	public draw(svg: SVGElement, config: GG.GraphConfig, expandOffset: boolean, overListener: (event: MouseEvent) => void, outListener: (event: MouseEvent) => void) {
+	public draw(svg: SVGElement, config: GG.GraphConfig, expandOffset: boolean, overListener: (event: MouseEvent) => void, outListener: (event: MouseEvent) => void, avatar?: string | null) {
 		if (this.onBranch === null) return;
 
 		const colour = this.isCommitted ? config.colours[this.onBranch.getColour() % config.colours.length] : '#808080';
 		const cx = (this.x * config.grid.x + config.grid.offsetX).toString();
 		const cy = (this.id * config.grid.y + config.grid.offsetY + (expandOffset ? config.grid.expandY : 0)).toString();
+
+		if (avatar && this.isCommitted && !this.isStash) {
+			// Render the committer's avatar in place of the commit dot (clipped to a circle, with a coloured ring).
+			const r = 8;
+			const cxNum = this.x * config.grid.x + config.grid.offsetX;
+			const cyNum = this.id * config.grid.y + config.grid.offsetY + (expandOffset ? config.grid.expandY : 0);
+
+			// Background mask, so branch lines don't show through the avatar
+			const bg = document.createElementNS(SVG_NAMESPACE, 'circle');
+			bg.setAttribute('cx', cx);
+			bg.setAttribute('cy', cy);
+			bg.setAttribute('r', (r + 0.5).toString());
+			bg.style.fill = 'var(--vscode-editor-background)';
+			svg.appendChild(bg);
+
+			// Clip path that rounds the avatar image into a circle
+			const clipId = 'graphAvatarClip' + this.id;
+			const clip = document.createElementNS(SVG_NAMESPACE, 'clipPath');
+			clip.setAttribute('id', clipId);
+			const clipCircle = document.createElementNS(SVG_NAMESPACE, 'circle');
+			clipCircle.setAttribute('cx', cx);
+			clipCircle.setAttribute('cy', cy);
+			clipCircle.setAttribute('r', r.toString());
+			clip.appendChild(clipCircle);
+			svg.appendChild(clip);
+
+			const image = document.createElementNS(SVG_NAMESPACE, 'image');
+			image.dataset.id = this.id.toString();
+			image.setAttribute('x', (cxNum - r).toString());
+			image.setAttribute('y', (cyNum - r).toString());
+			image.setAttribute('width', (r * 2).toString());
+			image.setAttribute('height', (r * 2).toString());
+			image.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+			image.setAttribute('clip-path', 'url(#' + clipId + ')');
+			image.setAttribute('href', avatar);
+			svg.appendChild(image);
+
+			const ring = document.createElementNS(SVG_NAMESPACE, 'circle');
+			ring.dataset.id = this.id.toString();
+			ring.setAttribute('cx', cx);
+			ring.setAttribute('cy', cy);
+			ring.setAttribute('r', r.toString());
+			ring.setAttribute('fill', 'none');
+			ring.setAttribute('stroke', colour);
+			ring.setAttribute('stroke-width', this.isCurrent ? '2' : '1.5');
+			svg.appendChild(ring);
+
+			image.addEventListener('mouseover', overListener);
+			image.addEventListener('mouseout', outListener);
+			ring.addEventListener('mouseover', overListener);
+			ring.addEventListener('mouseout', outListener);
+			return;
+		}
 
 		const circle = document.createElementNS(SVG_NAMESPACE, 'circle');
 		circle.dataset.id = this.id.toString();
@@ -347,6 +400,8 @@ class Graph {
 	private commitLookup: { [hash: string]: number } = {};
 	private onlyFollowFirstParent: boolean = false;
 	private expandedCommitIndex: number = -1;
+	private avatars: AvatarImageCollection = {};
+	private showAvatars: boolean = false;
 
 	private readonly viewElem: HTMLElement;
 	private readonly contentElem: HTMLElement;
@@ -389,6 +444,11 @@ class Graph {
 
 
 	/* Graph Operations */
+
+	public setAvatars(avatars: AvatarImageCollection, showAvatars: boolean) {
+		this.avatars = avatars;
+		this.showAvatars = showAvatars;
+	}
 
 	public loadCommits(commits: ReadonlyArray<GG.GitCommit>, commitHead: string | null, commitLookup: { [hash: string]: number }, onlyFollowFirstParent: boolean) {
 		this.commits = commits;
@@ -450,7 +510,10 @@ class Graph {
 
 		const overListener = (e: MouseEvent) => this.vertexOver(e), outListener = (e: MouseEvent) => this.vertexOut(e);
 		for (i = 0; i < this.vertices.length; i++) {
-			this.vertices[i].draw(group, this.config, expandedCommit !== null && i > expandedCommit.index, overListener, outListener);
+			const avatar = this.showAvatars && i < this.commits.length && this.commits[i].email !== ''
+				? this.avatars[this.commits[i].email]
+				: undefined;
+			this.vertices[i].draw(group, this.config, expandedCommit !== null && i > expandedCommit.index, overListener, outListener, avatar);
 		}
 
 		if (this.group !== null) this.svg.removeChild(this.group);

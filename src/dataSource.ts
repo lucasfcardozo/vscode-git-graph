@@ -7,7 +7,7 @@ import * as vscode from 'vscode';
 import { AskpassEnvironment, AskpassManager } from './askpass/askpassManager';
 import { getConfig } from './config';
 import { Logger } from './logger';
-import { CommitOrdering, DateType, DeepWriteable, ErrorInfo, ErrorInfoExtensionPrefix, GitCommit, GitCommitDetails, GitCommitStash, GitConfigLocation, GitFileChange, GitFileStatus, GitPushBranchMode, GitRepoConfig, GitRepoConfigBranches, GitResetMode, GitSignature, GitSignatureStatus, GitStash, GitTagDetails, MergeActionOn, RebaseActionOn, SquashMessageFormat, TagType, Writeable } from './types';
+import { CommitOrdering, DateType, DeepWriteable, ErrorInfo, ErrorInfoExtensionPrefix, GitBlameEntry, GitCommit, GitCommitDetails, GitCommitStash, GitConfigLocation, GitFileChange, GitFileStatus, GitPushBranchMode, GitRepoConfig, GitRepoConfigBranches, GitResetMode, GitSignature, GitSignatureStatus, GitStash, GitTagDetails, MergeActionOn, RebaseActionOn, SquashMessageFormat, TagType, Writeable } from './types';
 import { GitExecutable, GitVersionRequirement, UNABLE_TO_FIND_GIT_MSG, UNCOMMITTED, constructIncompatibleGitVersionMessage, doesVersionMeetRequirement, getPathFromStr, getPathFromUri, openGitTerminal, pathWithTrailingSlash, realpath, resolveSpawnOutput, showErrorMessage } from './utils';
 import { Disposable } from './utils/disposable';
 import { Event } from './utils/event';
@@ -437,6 +437,21 @@ export class DataSource extends Disposable {
 	}
 
 	/**
+	 * Get the Git blame information for a file.
+	 * @param repo The path of the repository.
+	 * @param filePath The absolute path of the file.
+	 * @returns An array of blame entries, one per line.
+	 */
+	public getBlame(repo: string, filePath: string): Promise<GitBlameEntry[]> {
+		const relPath = filePath.startsWith(repo)
+			? filePath.substring(repo.length).replace(/^[\/\\]/, '')
+			: filePath;
+		return this.spawnGit(['blame', '--porcelain', '--', relPath], repo, (stdout) => {
+			return parseGitBlame(stdout);
+		}).then((entries) => entries, () => []);
+	}
+
+	/**
 	 * Get the contents of a file at a specific revision.
 	 * @param repo The path of the repository.
 	 * @param commitHash The commit hash specifying the revision of the file.
@@ -448,6 +463,19 @@ export class DataSource extends Disposable {
 			const encoding = getConfig(repo).fileEncoding;
 			return decode(stdout, encodingExists(encoding) ? encoding : 'utf8');
 		});
+	}
+
+	/**
+	 * Get a short diff of a specific file at a given commit, for use in blame hover tooltips.
+	 * @param repo The path of the repository.
+	 * @param hash The commit hash.
+	 * @param relFilePath The path of the file relative to the repository root.
+	 * @returns The diff string (limited to the first 30 hunk lines), or an empty string on error.
+	 */
+	public getFileDiffForBlame(repo: string, hash: string, relFilePath: string, origLine: number): Promise<string> {
+		return this.spawnGit(['show', '-U3', '--first-parent', '--no-color', hash, '--', relFilePath], repo, (stdout) => {
+			return extractHunkForLine(stdout, origLine);
+		}).then((diff) => diff, () => '');
 	}
 
 
@@ -2295,6 +2323,128 @@ function getErrorMessage(error: Error | null, stdoutBuffer: Buffer, stderr: stri
 		lines = [];
 	}
 	return lines.join('\n');
+}
+
+/**
+ * Parse the output of `git blame --porcelain` into an array of blame entries.
+ * @param stdout The stdout output of the git blame command.
+ * @returns An array of GitBlameEntry objects.
+ */
+function parseGitBlame(stdout: string): GitBlameEntry[] {
+	const lines = stdout.split('\n');
+	const commits = new Map<string, { author: string; authorEmail: string; authorDate: number; summary: string }>();
+	const result: GitBlameEntry[] = [];
+	let i = 0;
+
+	while (i < lines.length) {
+		const headerMatch = lines[i].match(/^([0-9a-f]{40}) (\d+) (\d+)/);
+		if (!headerMatch) {
+			i++;
+			continue;
+		}
+		const hash = headerMatch[1];
+		const origLine = parseInt(headerMatch[2], 10);
+		const finalLine = parseInt(headerMatch[3], 10);
+		i++;
+
+		if (!commits.has(hash)) {
+			let author = '', authorEmail = '', authorDate = 0, summary = '';
+			while (i < lines.length && !lines[i].startsWith('\t')) {
+				const line = lines[i];
+				if (line.startsWith('author ') && !line.startsWith('author-')) {
+					author = line.substring(7);
+				} else if (line.startsWith('author-mail ')) {
+					authorEmail = line.substring(12).replace(/^<|>$/g, '');
+				} else if (line.startsWith('author-time ')) {
+					authorDate = parseInt(line.substring(12), 10);
+				} else if (line.startsWith('summary ')) {
+					summary = line.substring(8);
+				}
+				i++;
+			}
+			commits.set(hash, { author, authorEmail, authorDate, summary });
+		} else {
+			while (i < lines.length && !lines[i].startsWith('\t')) i++;
+		}
+
+		const entry = commits.get(hash)!;
+		result.push({ hash, author: entry.author, authorEmail: entry.authorEmail, authorDate: entry.authorDate, summary: entry.summary, line: finalLine, origLine });
+		i++; // skip the content line (tab-prefixed)
+	}
+
+	return result;
+}
+
+function extractHunkForLine(diffOutput: string, origLine: number): string {
+	const lines = diffOutput.split('\n');
+	let i = 0;
+	while (i < lines.length && !lines[i].startsWith('@@')) i++;
+
+	while (i < lines.length) {
+		const hunkMatch = lines[i].match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/);
+		if (!hunkMatch) {
+			i++;
+			continue;
+		}
+		const newStart = parseInt(hunkMatch[1], 10);
+		const newLen = hunkMatch[2] !== undefined ? parseInt(hunkMatch[2], 10) : 1;
+		const hunkLines: string[] = [];
+		i++;
+		while (i < lines.length && !lines[i].startsWith('@@')) {
+			hunkLines.push(lines[i]);
+			i++;
+		}
+		if (origLine >= newStart && origLine < newStart + Math.max(newLen, 1)) {
+			return extractChangeBlock(hunkLines, newStart, origLine);
+		}
+	}
+	return '';
+}
+
+/**
+ * Within a hunk, find the change block containing origLine on the + side, and
+ * return just the new line plus the old line it replaced (paired by position),
+ * mimicking the concise per-line diff shown by GitLens.
+ */
+function extractChangeBlock(hunkLines: string[], newStart: number, origLine: number): string {
+	let plusLine = newStart;
+	let i = 0;
+
+	while (i < hunkLines.length) {
+		const l = hunkLines[i];
+		if (l.startsWith('-') || l.startsWith('+')) {
+			// Collect a change block: a run of deletions followed by a run of additions.
+			const dels: string[] = [];
+			while (i < hunkLines.length && hunkLines[i].startsWith('-')) {
+				dels.push(hunkLines[i]);
+				i++;
+			}
+			const adds: string[] = [];
+			const addLineNums: number[] = [];
+			while (i < hunkLines.length && hunkLines[i].startsWith('+')) {
+				adds.push(hunkLines[i]);
+				addLineNums.push(plusLine);
+				plusLine++;
+				i++;
+			}
+
+			const addIdx = addLineNums.indexOf(origLine);
+			if (addIdx >= 0) {
+				const out: string[] = [];
+				// Pair with the deletion at the same position, or show an empty
+				// placeholder when the line is brand new (no line replaced), like GitLens.
+				out.push(addIdx < dels.length ? dels[addIdx] : '-');
+				out.push(adds[addIdx]);
+				return out.join('\n');
+			}
+		} else {
+			// context line
+			plusLine++;
+			i++;
+		}
+	}
+
+	return '';
 }
 
 /**

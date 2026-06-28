@@ -160,6 +160,7 @@ class SettingsWidget {
 				'<label id="settingsShowTags"><input type="checkbox" id="settingsShowTagsCheckbox" tabindex="-1"><span class="customCheckbox"></span>Show Tags</label><br/>' +
 				'<label id="settingsIncludeCommitsMentionedByReflogs"><input type="checkbox" id="settingsIncludeCommitsMentionedByReflogsCheckbox" tabindex="-1"><span class="customCheckbox"></span>Include commits only mentioned by reflogs</label><span class="settingsWidgetInfo" title="Only applies when showing all branches.">' + SVG_ICONS.info + '</span><br/>' +
 				'<label id="settingsOnlyFollowFirstParent"><input type="checkbox" id="settingsOnlyFollowFirstParentCheckbox" tabindex="-1"><span class="customCheckbox"></span>Only follow the first parent of commits</label><span class="settingsWidgetInfo" title="Instead of following all parents of commits, only follow the first parent when discovering the commits to load.">' + SVG_ICONS.info + '</span>' +
+				'<br/><label id="settingsShowAvatarsInGraph"><input type="checkbox" id="settingsShowAvatarsInGraphCheckbox" tabindex="-1"><span class="customCheckbox"></span>Show commit avatars in the graph</label><span class="settingsWidgetInfo" title="Display the committer\'s avatar next to each commit message. Requires &quot;Fetch Avatars&quot; to be enabled.">' + SVG_ICONS.info + '</span>' +
 				'</div>';
 
 			let userNameSet = false, userEmailSet = false;
@@ -336,6 +337,14 @@ class SettingsWidget {
 				if (elem === null) return;
 				this.view.saveRepoStateValue(this.currentRepo, 'onlyFollowFirstParent', elem.checked ? GG.BooleanOverride.Enabled : GG.BooleanOverride.Disabled);
 				this.view.refresh(true);
+			});
+
+			const settingsShowAvatarsInGraphElem = <HTMLInputElement>document.getElementById('settingsShowAvatarsInGraphCheckbox');
+			settingsShowAvatarsInGraphElem.checked = initialState.config.showAvatarsInGraph;
+			settingsShowAvatarsInGraphElem.addEventListener('change', () => {
+				const elem = <HTMLInputElement | null>document.getElementById('settingsShowAvatarsInGraphCheckbox');
+				if (elem === null) return;
+				sendMessage({ command: 'setShowAvatarsInGraph', enabled: elem.checked });
 			});
 
 			if (this.config !== null) {

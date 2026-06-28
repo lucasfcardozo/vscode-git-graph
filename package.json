@@ -96,6 +96,11 @@
 				"title": "Open File",
 				"icon": "$(go-to-file)",
 				"enablement": "isInDiffEditor && resourceScheme == git-graph && git-graph-plus:codiconsSupported"
+			},
+			{
+				"category": "Git Graph",
+				"command": "git-graph-plus.toggleInlineBlame",
+				"title": "Toggle Inline Blame Annotations"
 			}
 		],
 		"configuration": {
@@ -983,6 +988,11 @@
 					"default": false,
 					"description": "Fetch avatars of commit authors and committers. By enabling this setting, you consent to commit author and committer email addresses being sent GitHub, GitLab or Gravatar, depending on the repositories remote origin."
 				},
+				"git-graph-plus.repository.commits.showAvatarsInGraph": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show the author's avatar next to each commit message in the graph. Requires \"Fetch Avatars\" to also be enabled."
+				},
 				"git-graph-plus.repository.commits.initialLoad": {
 					"type": "number",
 					"default": 300,
@@ -1131,6 +1141,11 @@
 					],
 					"default": "Workspace Full Path",
 					"description": "Specifies the order that repositories are sorted in the repository dropdown on the Git Graph View (only visible when more than one repository exists in the current Visual Studio Code Workspace)."
+				},
+				"git-graph-plus.inlineBlame.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show inline Git blame annotations on each line of the active file, similar to GitLens."
 				},
 				"git-graph-plus.retainContextWhenHidden": {
 					"type": "boolean",

@@ -81,6 +81,16 @@ export const enum GitFileStatus {
 	Untracked = 'U'
 }
 
+export interface GitBlameEntry {
+	readonly hash: string;
+	readonly author: string;
+	readonly authorEmail: string;
+	readonly authorDate: number;
+	readonly summary: string;
+	readonly line: number;
+	readonly origLine: number;
+}
+
 export const enum GitPushBranchMode {
 	Normal = '',
 	Force = 'force',
@@ -245,6 +255,7 @@ export interface GitGraphViewConfig {
 	readonly fetchAndPrune: boolean;
 	readonly fetchAndPruneTags: boolean;
 	readonly fetchAvatars: boolean;
+	readonly showAvatarsInGraph: boolean;
 	readonly graph: GraphConfig;
 	readonly includeCommitsMentionedByReflogs: boolean;
 	readonly initialLoadCommits: number;
@@ -998,6 +1009,11 @@ export interface ResponseOpenExtensionSettings extends ResponseWithErrorInfo {
 	readonly command: 'openExtensionSettings';
 }
 
+export interface RequestSetShowAvatarsInGraph extends BaseMessage {
+	readonly command: 'setShowAvatarsInGraph';
+	readonly enabled: boolean;
+}
+
 export interface RequestOpenExternalDirDiff extends RepoRequest {
 	readonly command: 'openExternalDirDiff';
 	readonly fromHash: string;
@@ -1317,6 +1333,7 @@ export type RequestMessage =
 	| RequestRevertCommit
 	| RequestSetGlobalViewState
 	| RequestSetRepoState
+	| RequestSetShowAvatarsInGraph
 	| RequestSetWorkspaceViewState
 	| RequestShowErrorDialog
 	| RequestStartCodeReview

@@ -358,6 +358,13 @@ class Config {
 	}
 
 	/**
+	 * Get the value of the `git-graph-plus.repository.commits.showAvatarsInGraph` Extension Setting.
+	 */
+	get showAvatarsInGraph() {
+		return !!this.config.get('repository.commits.showAvatarsInGraph', false);
+	}
+
+	/**
 	 * Get the value of the `git-graph-plus.repository.commits.initialLoad` Extension Setting.
 	 */
 	get initialLoadCommits() {
@@ -490,6 +497,13 @@ class Config {
 	 */
 	get showUncommittedChanges() {
 		return !!this.getRenamedExtensionSetting('repository.showUncommittedChanges', 'showUncommittedChanges', true);
+	}
+
+	/**
+	 * Get the value of the `git-graph-plus.inlineBlame.enabled` Extension Setting.
+	 */
+	get inlineBlameEnabled() {
+		return !!this.config.get('inlineBlame.enabled', true);
 	}
 
 	/**

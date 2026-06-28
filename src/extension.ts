@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { AvatarManager } from './avatarManager';
+import { BlameAnnotationProvider } from './blameAnnotationProvider';
 import { CommandManager } from './commands';
 import { getConfig } from './config';
 import { DataSource } from './dataSource';
@@ -46,6 +47,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	const statusBarItem = new StatusBarItem(repoManager.getNumRepos(), repoManager.onDidChangeRepos, onDidChangeConfiguration, logger);
 	const commandManager = new CommandManager(context, avatarManager, dataSource, extensionState, repoManager, gitExecutable, onDidChangeGitExecutable, logger);
 	const diffDocProvider = new DiffDocProvider(dataSource);
+	const blameAnnotationProvider = new BlameAnnotationProvider(dataSource);
 
 	context.subscriptions.push(
 		vscode.workspace.registerTextDocumentContentProvider(DiffDocProvider.scheme, diffDocProvider),
@@ -75,6 +77,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		repoManager,
 		avatarManager,
 		dataSource,
+		blameAnnotationProvider,
+		vscode.commands.registerCommand('git-graph-plus.toggleInlineBlame', async () => {
+			const config = vscode.workspace.getConfiguration('git-graph-plus');
+			const current = config.get<boolean>('inlineBlame.enabled', true);
+			await config.update('inlineBlame.enabled', !current, vscode.ConfigurationTarget.Global);
+		}),
 		configurationEmitter,
 		extensionState,
 		gitExecutableEmitter,

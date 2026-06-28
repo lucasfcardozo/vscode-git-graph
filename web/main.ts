@@ -35,6 +35,7 @@ class GitGraphView {
 	private maxCommits: number;
 	private scrollTop = 0;
 	private renderedGitBranchHead: string | null = null;
+	private graphAvatarRefreshTimeout: NodeJS.Timer | null = null;
 
 	private lastScrollToStash: {
 		time: number,
@@ -531,6 +532,20 @@ class GitGraphView {
 				avatarsElems[i].innerHTML = '<img class="avatarImg" src="' + image + '">';
 			}
 		}
+		if (this.config.showAvatarsInGraph && this.config.fetchAvatars) {
+			this.scheduleGraphAvatarRefresh();
+		}
+	}
+
+	private scheduleGraphAvatarRefresh() {
+		if (this.graphAvatarRefreshTimeout !== null) return;
+		this.graphAvatarRefreshTimeout = setTimeout(() => {
+			this.graphAvatarRefreshTimeout = null;
+			if (typeof this.currentRepo === 'undefined') return;
+			const expandedCommit = this.isCdvDocked() ? null : this.expandedCommit;
+			this.graph.setAvatars(this.avatars, true);
+			this.graph.render(expandedCommit);
+		}, 75);
 	}
 
 
@@ -819,6 +834,7 @@ class GitGraphView {
 			: this.config.graph.grid.y;
 		this.config.graph.grid.offsetY = headerHeight + this.config.graph.grid.y / 2;
 
+		this.graph.setAvatars(this.avatars, this.config.showAvatarsInGraph && this.config.fetchAvatars);
 		this.graph.render(expandedCommit);
 	}
 

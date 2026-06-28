@@ -472,6 +472,10 @@ export class GitGraphView extends Disposable {
 					error: await openExtensionSettings()
 				});
 				break;
+			case 'setShowAvatarsInGraph':
+				await vscode.workspace.getConfiguration('git-graph-plus').update('repository.commits.showAvatarsInGraph', msg.enabled, vscode.ConfigurationTarget.Global);
+				this.update();
+				break;
 			case 'openExternalDirDiff':
 				this.sendMessage({
 					command: 'openExternalDirDiff',
@@ -702,6 +706,7 @@ export class GitGraphView extends Disposable {
 				fetchAndPrune: config.fetchAndPrune,
 				fetchAndPruneTags: config.fetchAndPruneTags,
 				fetchAvatars: config.fetchAvatars && this.extensionState.isAvatarStorageAvailable(),
+				showAvatarsInGraph: config.showAvatarsInGraph,
 				graph: config.graph,
 				includeCommitsMentionedByReflogs: config.includeCommitsMentionedByReflogs,
 				initialLoadCommits: config.initialLoadCommits,
