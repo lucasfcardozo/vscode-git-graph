@@ -985,13 +985,13 @@
 				},
 				"git-graph-plus.repository.commits.fetchAvatars": {
 					"type": "boolean",
-					"default": false,
+					"default": true,
 					"description": "Fetch avatars of commit authors and committers. By enabling this setting, you consent to commit author and committer email addresses being sent GitHub, GitLab or Gravatar, depending on the repositories remote origin."
 				},
 				"git-graph-plus.repository.commits.showAvatarsInGraph": {
 					"type": "boolean",
 					"default": false,
-					"description": "Show the author's avatar next to each commit message in the graph. Requires \"Fetch Avatars\" to also be enabled."
+					"description": "Show the author's avatar in the graph (in place of the commit dot) instead of next to the author name. Requires \"Fetch Avatars\" to also be enabled."
 				},
 				"git-graph-plus.repository.commits.initialLoad": {
 					"type": "number",

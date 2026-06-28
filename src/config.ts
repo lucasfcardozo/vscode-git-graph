@@ -354,7 +354,7 @@ class Config {
 	 * Get the value of the `git-graph-plus.repository.commits.fetchAvatars` Extension Setting.
 	 */
 	get fetchAvatars() {
-		return !!this.getRenamedExtensionSetting('repository.commits.fetchAvatars', 'fetchAvatars', false);
+		return !!this.getRenamedExtensionSetting('repository.commits.fetchAvatars', 'fetchAvatars', true);
 	}
 
 	/**

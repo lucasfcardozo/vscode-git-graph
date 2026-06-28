@@ -24,8 +24,8 @@ export class StatusBarItem extends Disposable {
 		this.logger = logger;
 
 		const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 1);
-		statusBarItem.text = 'Git Graph';
-		statusBarItem.tooltip = 'View Git Graph';
+		statusBarItem.text = 'Graph+';
+		statusBarItem.tooltip = 'View Graph+';
 		statusBarItem.command = 'git-graph-plus.view';
 		this.statusBarItem = statusBarItem;
 
@@ -61,10 +61,10 @@ export class StatusBarItem extends Disposable {
 		if (this.isVisible !== shouldBeVisible) {
 			if (shouldBeVisible) {
 				this.statusBarItem.show();
-				this.logger.log('Showing "Git Graph" Status Bar Item');
+				this.logger.log('Showing "Graph+" Status Bar Item');
 			} else {
 				this.statusBarItem.hide();
-				this.logger.log('Hiding "Git Graph" Status Bar Item');
+				this.logger.log('Hiding "Graph+" Status Bar Item');
 			}
 			this.isVisible = shouldBeVisible;
 		}

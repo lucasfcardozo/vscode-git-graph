@@ -120,6 +120,28 @@ export class CommandManager extends Disposable {
 			loadRepo = this.repoManager.getRepoContainingFile(getPathFromUri(vscode.window.activeTextEditor.document.uri));
 		}
 
+		// Fallback: if no known repos are loaded, attempt to auto-register one from the active editor or workspace roots.
+		if (loadRepo === null && this.repoManager.getNumRepos() === 0) {
+			const candidatePaths: string[] = [];
+
+			if (vscode.window.activeTextEditor) {
+				candidatePaths.push(getPathFromUri(vscode.window.activeTextEditor.document.uri));
+			}
+
+			const workspaceFolders = vscode.workspace.workspaceFolders;
+			if (workspaceFolders) {
+				for (let i = 0; i < workspaceFolders.length; i++) {
+					candidatePaths.push(getPathFromUri(workspaceFolders[i].uri));
+				}
+			}
+
+			for (let i = 0; i < candidatePaths.length && loadRepo === null; i++) {
+				const path = candidatePaths[i];
+				if (!isPathInWorkspace(path)) continue;
+				loadRepo = (await this.repoManager.registerRepo(await resolveToSymbolicPath(path), true)).root;
+			}
+		}
+
 		GitGraphView.createOrShow(this.context.extensionPath, this.dataSource, this.extensionState, this.avatarManager, this.repoManager, this.logger, loadRepo !== null ? { repo: loadRepo } : null);
 	}
 
