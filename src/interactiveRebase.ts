@@ -416,13 +416,14 @@ code.ref {
 }
 .drag-handle {
 	cursor: grab;
-	opacity: 0;
-	font-size: 12px;
+	opacity: 0.55;
+	font-size: 15px;
 	line-height: 1;
 	flex-shrink: 0;
-	color: rgba(128,128,128,0.8);
+	color: rgba(128,128,128,0.9);
+	transition: opacity 0.1s, color 0.1s;
 }
-.entry:hover .drag-handle { opacity: 1; }
+.entry:hover .drag-handle { opacity: 1; color: var(--vscode-foreground); }
 .drag-handle:active { cursor: grabbing; }
 
 /* ── Custom action dropdown ── */

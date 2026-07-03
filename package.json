@@ -1,7 +1,7 @@
 {
 	"name": "git-graph-plus",
 	"displayName": "Git Graph Plus",
-	"version": "1.30.0",
+	"version": "1.30.0-alpha9",
 	"publisher": "carica",
 	"author": {
 		"name": "Michael Hutchison",

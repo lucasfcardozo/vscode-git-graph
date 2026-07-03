@@ -11,6 +11,7 @@ import { Logger } from './logger';
 import { RepoManager } from './repoManager';
 import { StatusBarItem } from './statusBarItem';
 import { InteractiveRebasePanel } from './interactiveRebase';
+import { GitGraphView } from './gitGraphView';
 import { GitExecutable, UNABLE_TO_FIND_GIT_MSG, findGit, getGitExecutableFromPaths, showErrorMessage, showInformationMessage } from './utils';
 import { EventEmitter } from './utils/event';
 
@@ -48,6 +49,13 @@ export async function activate(context: vscode.ExtensionContext) {
 	const commandManager = new CommandManager(context, avatarManager, dataSource, extensionState, repoManager, gitExecutable, onDidChangeGitExecutable, logger);
 	const diffDocProvider = new DiffDocProvider(dataSource);
 	const blameAnnotationProvider = new BlameAnnotationProvider(dataSource);
+
+	// Restore a Git Graph panel that was open when VS Code was last closed.
+	vscode.window.registerWebviewPanelSerializer(GitGraphView.viewType, {
+		async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel, _state: unknown) {
+			GitGraphView.revive(webviewPanel, context.extensionPath, dataSource, extensionState, avatarManager, repoManager, logger);
+		}
+	});
 
 	context.subscriptions.push(
 		vscode.workspace.registerTextDocumentContentProvider(DiffDocProvider.scheme, diffDocProvider),

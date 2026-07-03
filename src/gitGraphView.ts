@@ -16,6 +16,7 @@ import { Disposable, toDisposable } from './utils/disposable';
  * Manages the Git Graph View.
  */
 export class GitGraphView extends Disposable {
+	public static readonly viewType = 'git-graph-plus';
 	public static currentPanel: GitGraphView | undefined;
 
 	private readonly panel: vscode.WebviewPanel;
@@ -44,6 +45,13 @@ export class GitGraphView extends Disposable {
 	 * @param logger The Git Graph Logger instance.
 	 * @param loadViewTo What to load the view to.
 	 */
+	/**
+	 * Revive a previously serialized Git Graph panel (called by the WebviewPanelSerializer on startup).
+	 */
+	public static revive(panel: vscode.WebviewPanel, extensionPath: string, dataSource: DataSource, extensionState: ExtensionState, avatarManager: AvatarManager, repoManager: RepoManager, logger: Logger) {
+		GitGraphView.currentPanel = new GitGraphView(extensionPath, dataSource, extensionState, avatarManager, repoManager, logger, null, panel.viewColumn, panel);
+	}
+
 	public static createOrShow(extensionPath: string, dataSource: DataSource, extensionState: ExtensionState, avatarManager: AvatarManager, repoManager: RepoManager, logger: Logger, loadViewTo: LoadGitGraphViewTo) {
 		const column = vscode.window.activeTextEditor ? vscode.window.activeTextEditor.viewColumn : undefined;
 
@@ -75,8 +83,9 @@ export class GitGraphView extends Disposable {
 	 * @param logger The Git Graph Logger instance.
 	 * @param loadViewTo What to load the view to.
 	 * @param column The column the view should be loaded in.
+	 * @param existingPanel An existing webview panel to reuse (used by revive on deserialisation).
 	 */
-	private constructor(extensionPath: string, dataSource: DataSource, extensionState: ExtensionState, avatarManager: AvatarManager, repoManager: RepoManager, logger: Logger, loadViewTo: LoadGitGraphViewTo, column: vscode.ViewColumn | undefined) {
+	private constructor(extensionPath: string, dataSource: DataSource, extensionState: ExtensionState, avatarManager: AvatarManager, repoManager: RepoManager, logger: Logger, loadViewTo: LoadGitGraphViewTo, column: vscode.ViewColumn | undefined, existingPanel?: vscode.WebviewPanel) {
 		super();
 		this.extensionPath = extensionPath;
 		this.avatarManager = avatarManager;
@@ -87,17 +96,29 @@ export class GitGraphView extends Disposable {
 		this.loadViewTo = loadViewTo;
 
 		const config = getConfig();
-		this.panel = vscode.window.createWebviewPanel('git-graph-plus', 'Git Graph', column || vscode.ViewColumn.One, {
+		this.panel = existingPanel ?? vscode.window.createWebviewPanel(GitGraphView.viewType, 'Git Graph', column || vscode.ViewColumn.One, {
 			enableScripts: true,
 			localResourceRoots: [vscode.Uri.file(path.join(extensionPath, 'media'))],
 			retainContextWhenHidden: config.retainContextWhenHidden
 		});
-		this.panel.iconPath = config.tabIconColourTheme === TabIconColourTheme.Colour
-			? this.getResourcesUri('webview-icon.svg')
-			: {
-				light: this.getResourcesUri('webview-icon-light.svg'),
-				dark: this.getResourcesUri('webview-icon-dark.svg')
+		if (existingPanel) {
+			// VS Code does not automatically restore the Webview's options (e.g. enableScripts,
+			// localResourceRoots) on a revived panel, so they must be re-applied here. Without this,
+			// the panel's static HTML renders, but its script never executes.
+			this.panel.webview.options = {
+				enableScripts: true,
+				localResourceRoots: [vscode.Uri.file(path.join(extensionPath, 'media'))]
 			};
+		}
+		if (!existingPanel) {
+			// Apply icon only to newly created panels; revived panels keep their stored icon.
+			this.panel.iconPath = config.tabIconColourTheme === TabIconColourTheme.Colour
+				? this.getResourcesUri('webview-icon.svg')
+				: {
+					light: this.getResourcesUri('webview-icon-light.svg'),
+					dark: this.getResourcesUri('webview-icon-dark.svg')
+				};
+		}
 
 
 		this.registerDisposables(

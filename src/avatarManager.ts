@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as https from 'https';
-import * as url from 'url';
+import { URL } from 'url';
 import { DataSource } from './dataSource';
 import { ExtensionState } from './extensionState';
 import { Logger } from './logger';
@@ -367,7 +367,7 @@ export class AvatarManager extends Disposable {
 	private downloadAvatarImage(email: string, imageUrl: string) {
 		return (new Promise<string | null>((resolve) => {
 			const hash = crypto.createHash('md5').update(email).digest('hex');
-			const imgUrl = url.parse(imageUrl);
+			const imgUrl = new URL(imageUrl);
 
 			let completed = false;
 			const complete = (fileName: string | null = null) => {
@@ -378,7 +378,7 @@ export class AvatarManager extends Disposable {
 			};
 
 			https.get({
-				hostname: imgUrl.hostname, path: imgUrl.path,
+				hostname: imgUrl.hostname, path: imgUrl.pathname + imgUrl.search,
 				headers: { 'User-Agent': 'vscode-git-graph' },
 				agent: false, timeout: 15000
 			}, (res) => {

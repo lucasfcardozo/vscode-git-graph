@@ -1089,7 +1089,7 @@ export class DataSource extends Disposable {
 			await this.writeFile(todoPath, todoFileContent);
 
 			await this.writeFile(sequenceEditorPath, [
-				'const fs = require("fs");',
+				'const fs = require(\'fs\');',
 				'const source = process.argv[2];',
 				'const target = process.argv[3];',
 				'if (!source || !target) {',
@@ -1134,6 +1134,7 @@ export class DataSource extends Disposable {
 
 			const sequenceEditorCommand = '"' + process.execPath.replace(/"/g, '\\"') + '" "' + sequenceEditorPath.replace(/"/g, '\\"') + '" "' + todoPath.replace(/"/g, '\\"') + '"';
 			return await this.runGitCommand(args, repo, {
+				ELECTRON_RUN_AS_NODE: '1',
 				GIT_SEQUENCE_EDITOR: sequenceEditorCommand
 			});
 		} catch (error) {
@@ -1366,7 +1367,7 @@ export class DataSource extends Disposable {
 			await this.writeFile(todoPath, todoContent);
 
 			await this.writeFile(sequenceEditorPath, [
-				'const fs = require("fs");',
+				'const fs = require(\'fs\');',
 				'const source = process.argv[2];',
 				'const target = process.argv[3];',
 				'if (!source || !target) {',
@@ -1376,14 +1377,20 @@ export class DataSource extends Disposable {
 			].join('\n'));
 
 			// Build the ordered queue of commit-message overrides (one entry per editor stop git will make).
-			// A string overrides the message; null preserves git's default (e.g. the combined squash message),
-			// which also suppresses the editor prompt entirely.
+			// A string overrides the message (already edited inline in the panel, e.g. via reword); null means
+			// there's no override (e.g. a plain squash/fixup meld), in which case the user is shown git's default
+			// combined message in their configured editor to review/edit, matching standard `git rebase -i`.
 			const messageQueue = buildInteractiveRebaseEditorQueue(entries);
 			await this.writeFile(messagesPath, JSON.stringify(messageQueue));
 			await this.writeFile(counterPath, '0');
+
+			const coreEditorConfig = await this.spawnGit(['config', '--get', 'core.editor'], repo, (stdout) => stdout.split(EOL_REGEX)[0]).catch(() => '');
+			const editorCmd = coreEditorConfig.trim() !== '' ? coreEditorConfig.trim() : 'code --wait';
+
 			await this.writeFile(commitEditorPath, [
-				'const fs = require("fs");',
-				'const path = require("path");',
+				'const fs = require(\'fs\');',
+				'const path = require(\'path\');',
+				'const { execSync } = require(\'child_process\');',
 				'const target = process.argv[2];',
 				'const dir = __dirname;',
 				'let msgs = [];',
@@ -1393,6 +1400,10 @@ export class DataSource extends Disposable {
 				'const m = msgs[k];',
 				'if (typeof m === "string" && target) {',
 				'\tfs.writeFileSync(target, m.charAt(m.length - 1) === "\\n" ? m : m + "\\n", "utf8");',
+				'} else if (target) {',
+				'\t// No override: let the user review/edit the combined message git already wrote to <target>,',
+				'\t// by opening it in their configured editor and waiting for it to be closed.',
+				'\ttry { execSync(' + JSON.stringify(editorCmd) + ' + \' \' + JSON.stringify(target), { stdio: "ignore" }); } catch (e) { /* ignore */ }',
 				'}',
 				'try { fs.writeFileSync(path.join(dir, "counter.txt"), String(k + 1), "utf8"); } catch (e) { /* ignore */ }'
 			].join('\n'));
@@ -1406,6 +1417,7 @@ export class DataSource extends Disposable {
 			const sequenceEditorCommand = '"' + process.execPath.replace(/"/g, '\\"') + '" "' + sequenceEditorPath.replace(/"/g, '\\"') + '" "' + todoPath.replace(/"/g, '\\"') + '"';
 			const commitEditorCommand = '"' + process.execPath.replace(/"/g, '\\"') + '" "' + commitEditorPath.replace(/"/g, '\\"') + '"';
 			return await this.runGitCommand(args, repo, {
+				ELECTRON_RUN_AS_NODE: '1',
 				GIT_SEQUENCE_EDITOR: sequenceEditorCommand,
 				GIT_EDITOR: commitEditorCommand
 			});
@@ -2516,9 +2528,9 @@ export interface GitCommitDetailsData {
 /**
  * Build the ordered queue of commit-message overrides applied during an interactive rebase, one
  * item per editor stop git will make (top-down). A string overrides the message for that stop; null
- * preserves git's default message (e.g. the combined squash message), which also suppresses the
- * editor prompt. Plans containing `edit` return an empty queue (all defaults preserved) to avoid
- * misaligning the queue with git's unpredictable stops.
+ * means there's no override, so the user is shown git's default message (e.g. the combined squash
+ * message) in their configured editor to review/edit. Plans containing `edit` return an empty queue
+ * (all defaults preserved) to avoid misaligning the queue with git's unpredictable stops.
  * @param entries The ordered interactive rebase entries.
  * @returns The ordered queue of message overrides.
  */
