@@ -1347,6 +1347,49 @@ export class DataSource extends Disposable {
 	}
 
 	/**
+	 * Get the command used to open the combined commit message file (for squash/fixup groups) when
+	 * `core.editor` is not configured. Resolves the absolute path of the running VS Code's own `code`
+	 * CLI (via `vscode.env.appRoot`) instead of relying on a bare `code` command, since the extension
+	 * host's process PATH often doesn't include the directory containing the `code` CLI (e.g. when VS
+	 * Code is launched from the Dock/Finder on macOS, rather than from a terminal).
+	 * @returns The editor command to use.
+	 */
+	private getDefaultCommitEditorCmd() {
+		try {
+			const codeBin = path.join(vscode.env.appRoot, 'bin', process.platform === 'win32' ? 'code.cmd' : 'code');
+			if (fs.existsSync(codeBin)) {
+				return '"' + codeBin + '" --wait';
+			}
+		} catch (e) {
+			// Ignore, and fall back to relying on `code` being available on PATH.
+		}
+		return 'code --wait';
+	}
+
+	/**
+	 * Build a `PATH` environment variable value augmented with the directories commonly needed to
+	 * resolve editor CLIs (e.g. `code`, `code-insiders`) that are configured (either by us, or by the
+	 * user via `core.editor`) as a bare command name. This is necessary because on macOS, when VS Code
+	 * is launched from the Dock/Finder (rather than a terminal), its process PATH often doesn't include
+	 * `/usr/local/bin` or `/opt/homebrew/bin` - the locations where the `code` CLI shim is installed -
+	 * causing a bare `code --wait` (a very common `core.editor` setting) to fail silently.
+	 * @returns The augmented `PATH` value.
+	 */
+	private getAugmentedEditorPath() {
+		const pathSeparator = process.platform === 'win32' ? ';' : ':';
+		const extraDirs: string[] = [];
+		if (process.platform !== 'win32') {
+			extraDirs.push('/usr/local/bin', '/opt/homebrew/bin', '/opt/homebrew/sbin');
+		}
+		try {
+			extraDirs.push(path.join(vscode.env.appRoot, 'bin'));
+		} catch (e) {
+			// Ignore
+		}
+		return extraDirs.join(pathSeparator) + pathSeparator + (process.env.PATH || '');
+	}
+
+	/**
 	 * Execute an interactive rebase with the given ordered and annotated entries.
 	 * @param repo The path of the repository.
 	 * @param obj The object the current branch will be rebased onto.
@@ -1385,7 +1428,7 @@ export class DataSource extends Disposable {
 			await this.writeFile(counterPath, '0');
 
 			const coreEditorConfig = await this.spawnGit(['config', '--get', 'core.editor'], repo, (stdout) => stdout.split(EOL_REGEX)[0]).catch(() => '');
-			const editorCmd = coreEditorConfig.trim() !== '' ? coreEditorConfig.trim() : 'code --wait';
+			const editorCmd = coreEditorConfig.trim() !== '' ? coreEditorConfig.trim() : this.getDefaultCommitEditorCmd();
 
 			await this.writeFile(commitEditorPath, [
 				'const fs = require(\'fs\');',
@@ -1419,7 +1462,12 @@ export class DataSource extends Disposable {
 			return await this.runGitCommand(args, repo, {
 				ELECTRON_RUN_AS_NODE: '1',
 				GIT_SEQUENCE_EDITOR: sequenceEditorCommand,
-				GIT_EDITOR: commitEditorCommand
+				GIT_EDITOR: commitEditorCommand,
+				// Ensure the `code` (or other editor) CLI configured via `core.editor` can be resolved by
+				// the `execSync` call inside commitEditorPath, even if it's referenced as a bare command
+				// name and the extension host's own PATH is missing common install locations (see
+				// getAugmentedEditorPath for details).
+				PATH: this.getAugmentedEditorPath()
 			});
 		} catch (error) {
 			return typeof error === 'string' ? error : 'Unable to execute interactive rebase.';

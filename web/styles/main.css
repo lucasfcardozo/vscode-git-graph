@@ -729,7 +729,7 @@ body.vscode-high-contrast #commitTable tr.commit.findCurrentCommit{
 	margin-top:2px;
 	margin-right:5px;
 	background-color:rgba(128,128,128,0.15);
-	border-radius:5px;
+	border-radius:9px;
 	border:1px solid rgba(128,128,128,0.75);
 	vertical-align:top;
 	font-size:12px;
@@ -745,9 +745,9 @@ body.vscode-high-contrast #commitTable tr.commit.findCurrentCommit{
 .gitRef > svg{
 	background-color:var(--git-graph-color);
 	fill:var(--vscode-editor-background);
-	width:14px;
-	height:14px;
-	padding:2px;
+	width:16px;
+	height:16px;
+	padding:1px 3px;
 	vertical-align:top;
 }
 
@@ -755,7 +755,7 @@ body.vscode-high-contrast #commitTable tr.commit.findCurrentCommit{
 	display:inline-block;
 	height:18px;
 	line-height:18px;
-	padding:0 5px;
+	padding:0 7px 0 5px;
 }
 .gitRefHeadRemote{
 	border-left:1px solid rgba(128,128,128,0.45);
