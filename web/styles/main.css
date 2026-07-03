@@ -238,9 +238,13 @@ code{
 	padding:0 4px;
 }
 #commitTable th{
-	border-bottom:1px solid rgba(128,128,128,0.5);
+	position:sticky;
+	top:var(--controls-height, 42px);
+	z-index:3;
+	box-shadow:inset 0 -1px 0 0 rgba(128,128,128,0.5);
 	line-height:18px;
 	padding:6px 12px;
+	background-color:var(--vscode-editor-background);
 }
 #commitTable tr.commit td{
 	cursor:pointer;
@@ -656,7 +660,8 @@ svg.openFolderIcon, svg.closedFolderIcon, svg.fileIcon{
 	display:inline-block;
 	width:18px;
 	height:18px;
-	border-radius:4px;
+	border-radius:50%;
+	object-fit:cover;
 	vertical-align:top;
 	margin-top:3px;
 	margin-right:4px;
@@ -799,25 +804,44 @@ body.tagLabelsRightAligned .gitRef.tag{
 /* Controls */
 
 #controls{
-	display:block;
-	position:relative;
-	left:0;
-	right:0;
+	display:flex;
+	align-items:center;
+	justify-content:space-between;
+	gap:10px;
+	position:sticky;
 	top:0;
-	padding:4px 132px 4px 0;
+	z-index:6;
+	padding:4px 10px;
 	border-bottom:1px solid rgba(128,128,128,0.5);
 	line-height:32px;
-	text-align:center;
 	font-weight:700;
 	font-size:13px;
+	background-color:var(--vscode-editor-background);
 	-webkit-user-select:none;
 	user-select:none;
+}
+
+#controlsLeft{
+	display:flex;
+	flex-wrap:wrap;
+	align-items:center;
+	min-width:0;
+	flex:1;
+}
+#controlsRight{
+	display:flex;
+	align-items:center;
+	flex-shrink:0;
+	gap:4px;
+	margin-left:auto;
+	padding-left:10px;
+	border-left:1px solid rgba(128,128,128,0.3);
 }
 
 #repoControl, #branchControl, #showRemoteBranchesControl{
 	display:inline-block;
 	white-space:nowrap;
-	margin:0 10px;
+	margin:0 10px 0 0;
 }
 #repoDropdown, #branchDropdown{
 	margin-left:3px;
@@ -837,36 +861,31 @@ body.tagLabelsRightAligned .gitRef.tag{
 }
 
 #findBtn, #terminalBtn, #settingsBtn, #fetchBtn, #refreshBtn{
-	position:absolute;
-	top:50%;
-	width:20px;
-	height:20px;
-	margin-top:-10px;
+	position:relative;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+	width:26px;
+	height:26px;
+	border-radius:5px;
 	cursor:pointer;
 	-webkit-user-select:none;
 	user-select:none;
+	transition:background-color 0.1s ease;
 }
-#findBtn{
-	right:100px;
-}
-#terminalBtn{
-	right:70px;
-}
-#settingsBtn{
-	right:40px;
+#findBtn:hover, #terminalBtn:hover, #settingsBtn:hover, #fetchBtn:hover, #refreshBtn:not(.refreshing):hover{
+	background-color:var(--vscode-toolbar-hoverBackground, rgba(128,128,128,0.2));
 }
 #fetchBtn{
 	display:none;
-	right:40px;
 }
-#refreshBtn{
-	right:10px;
+#controls.fetchSupported #fetchBtn{
+	display:flex;
 }
 #refreshBtn.refreshing{
 	cursor:default;
 }
 #findBtn svg, #terminalBtn svg, #settingsBtn svg, #fetchBtn svg, #refreshBtn svg{
-	position:absolute;
 	fill:var(--vscode-editor-foreground);
 	opacity:0.8;
 	stroke:var(--vscode-editor-foreground);
@@ -884,39 +903,26 @@ body.tagLabelsRightAligned .gitRef.tag{
 	stroke-width:1px;
 }
 #findBtn svg, #terminalBtn svg, #settingsBtn svg, #fetchBtn svg{
-	left:1px;
-	top:1px;
 	width:18px !important;
 	height:18px !important;
 }
 #refreshBtn svg{
-	left:2px;
-	top:2px;
 	width:16px !important;
 	height:16px !important;
 }
 #refreshBtn.refreshing svg{
-	left:3.25px;
-	top:2px;
 	width:13.5px !important;
 	height:18px !important;
 	animation:loadingIconAnimation 2s linear infinite;
 }
 
-#controls.fetchSupported{
-	padding-right:162px;
-}
-#controls.fetchSupported #findBtn{
-	right:130px;
-}
-#controls.fetchSupported #terminalBtn{
-	right:100px;
-}
-#controls.fetchSupported #settingsBtn{
-	right:70px;
-}
-#controls.fetchSupported #fetchBtn{
-	display:block;
+@media screen and (max-width: 600px) {
+	#repoControl .unselectable, #branchControl .unselectable, #showRemoteBranchesControl .unselectable{
+		display:none;
+	}
+	#showRemoteBranchesControl > .customCheckbox{
+		margin-right:0;
+	}
 }
 
 #controls input:focus{

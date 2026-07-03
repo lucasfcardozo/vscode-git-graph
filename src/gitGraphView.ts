@@ -768,14 +768,18 @@ export class GitGraphView extends Disposable {
 			body = `<body>
 			<div id="view" tabindex="-1">
 				<div id="controls">
-					<span id="repoControl"><span class="unselectable">Repo: </span><div id="repoDropdown" class="dropdown"></div></span>
-					<span id="branchControl"><span class="unselectable">Branches: </span><div id="branchDropdown" class="dropdown"></div></span>
-					<label id="showRemoteBranchesControl"><input type="checkbox" id="showRemoteBranchesCheckbox" tabindex="-1"><span class="customCheckbox"></span>Show Remote Branches</label>
-					<div id="findBtn" title="Find"></div>
-					<div id="terminalBtn" title="Open a Terminal for this Repository"></div>
-					<div id="settingsBtn" title="Repository Settings"></div>
-					<div id="fetchBtn"></div>
-					<div id="refreshBtn"></div>
+					<div id="controlsLeft">
+						<span id="repoControl"><span class="unselectable">Repo: </span><div id="repoDropdown" class="dropdown"></div></span>
+						<span id="branchControl"><span class="unselectable">Branches: </span><div id="branchDropdown" class="dropdown"></div></span>
+						<label id="showRemoteBranchesControl"><input type="checkbox" id="showRemoteBranchesCheckbox" tabindex="-1"><span class="customCheckbox"></span><span class="unselectable">Show Remote Branches</span></label>
+					</div>
+					<div id="controlsRight">
+						<div id="findBtn" title="Find"></div>
+						<div id="terminalBtn" title="Open a Terminal for this Repository"></div>
+						<div id="settingsBtn" title="Repository Settings"></div>
+						<div id="fetchBtn"></div>
+						<div id="refreshBtn"></div>
+					</div>
 				</div>
 				<div id="rebase-banner" style="display:none">
 					<span id="rebase-banner-msg">⚠&nbsp;Rebase in progress</span>

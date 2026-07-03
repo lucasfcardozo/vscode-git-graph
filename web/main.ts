@@ -768,7 +768,7 @@ class GitGraphView {
 	}
 
 	private saveColumnWidths(columnWidths: GG.ColumnWidth[]) {
-		this.gitRepos[this.currentRepo].columnWidths = [columnWidths[0], columnWidths[2], columnWidths[3], columnWidths[4]];
+		this.gitRepos[this.currentRepo].columnWidths = [columnWidths[0], columnWidths[4], columnWidths[2], columnWidths[3]];
 		this.saveRepoState();
 	}
 
@@ -814,6 +814,8 @@ class GitGraphView {
 	}
 
 	private renderGraph() {
+		document.body.style.setProperty('--controls-height', this.controlsElem.clientHeight + 'px');
+
 		if (typeof this.currentRepo === 'undefined') {
 			// Only render the graph if a repo is loaded (or a repo is currently being loaded)
 			return;
@@ -851,9 +853,9 @@ class GitGraphView {
 		});
 
 		let html = '<tr id="tableColHeaders"><th id="tableHeaderGraphCol" class="tableColHeader" data-col="0">Graph</th><th class="tableColHeader" data-col="1">Description</th>' +
-			(colVisibility.date ? '<th class="tableColHeader dateCol" data-col="2">Date</th>' : '') +
-			(colVisibility.author ? '<th class="tableColHeader authorCol" data-col="3">Author</th>' : '') +
-			(colVisibility.commit ? '<th class="tableColHeader" data-col="4">Commit</th>' : '') +
+			(colVisibility.author ? '<th class="tableColHeader authorCol" data-col="2">Author</th>' : '') +
+			(colVisibility.commit ? '<th class="tableColHeader" data-col="3">Commit</th>' : '') +
+			(colVisibility.date ? '<th class="tableColHeader dateCol" data-col="4">Date</th>' : '') +
 			'</tr>';
 
 		for (let i = 0; i < this.commits.length; i++) {
@@ -899,9 +901,9 @@ class GitGraphView {
 
 			html += '<tr class="commit' + (commit.hash === currentHash ? ' current' : '') + (mutedCommits[i] ? ' mute' : '') + '"' + (commit.hash !== UNCOMMITTED ? '' : ' id="uncommittedChanges"') + ' data-id="' + i + '" data-color="' + vertexColours[i] + '">' +
 				(this.config.referenceLabels.branchLabelsAlignedToGraph ? '<td>' + (refBranches !== '' ? '<span style="margin-left:' + (widthsAtVertices[i] - 4) + 'px"' + refBranches.substring(5) : '') + '</td><td><span class="description">' + commitDot : '<td></td><td><span class="description">' + commitDot + refBranches) + (this.config.referenceLabels.tagLabelsOnRight ? message + refTags : refTags + message) + '</span></td>' +
-				(colVisibility.date ? '<td class="dateCol text" title="' + date.title + '">' + date.formatted + '</td>' : '') +
 				(colVisibility.author ? '<td class="authorCol text" title="' + escapeHtml(commit.author + ' <' + commit.email + '>') + '">' + (this.config.fetchAvatars && !this.config.showAvatarsInGraph ? '<span class="avatar" data-email="' + escapeHtml(commit.email) + '">' + (typeof this.avatars[commit.email] === 'string' ? '<img class="avatarImg" src="' + this.avatars[commit.email] + '">' : '') + '</span>' : '') + escapeHtml(commit.author) + '</td>' : '') +
 				(colVisibility.commit ? '<td class="text" title="' + escapeHtml(commit.hash) + '">' + abbrevCommit(commit.hash) + '</td>' : '') +
+				(colVisibility.date ? '<td class="dateCol text" title="' + date.title + '">' + date.formatted + '</td>' : '') +
 				'</tr>';
 		}
 		this.tableElem.innerHTML = '<table>' + html + '</table>';
@@ -957,9 +959,9 @@ class GitGraphView {
 	private renderUncommittedChanges() {
 		const colVisibility = this.getColumnVisibility(), date = formatShortDate(this.commits[0].date);
 		document.getElementById('uncommittedChanges')!.innerHTML = '<td></td><td><b>' + escapeHtml(this.commits[0].message) + '</b></td>' +
-			(colVisibility.date ? '<td class="dateCol text" title="' + date.title + '">' + date.formatted + '</td>' : '') +
 			(colVisibility.author ? '<td class="authorCol text" title="* <>">*</td>' : '') +
-			(colVisibility.commit ? '<td class="text" title="*">*</td>' : '');
+			(colVisibility.commit ? '<td class="text" title="*">*</td>' : '') +
+			(colVisibility.date ? '<td class="dateCol text" title="' + date.title + '">' + date.formatted + '</td>' : '');
 	}
 
 	private renderFetchButton() {
@@ -1763,10 +1765,10 @@ class GitGraphView {
 		let cWidths = this.gitRepos[this.currentRepo].columnWidths;
 		if (cWidths === null) { // Initialise auto column layout if it is the first time viewing the repo.
 			let defaults = this.config.defaultColumnVisibility;
-			columnWidths = [COLUMN_AUTO, COLUMN_AUTO, defaults.date ? COLUMN_AUTO : COLUMN_HIDDEN, defaults.author ? COLUMN_AUTO : COLUMN_HIDDEN, defaults.commit ? COLUMN_AUTO : COLUMN_HIDDEN];
+			columnWidths = [COLUMN_AUTO, COLUMN_AUTO, defaults.author ? COLUMN_AUTO : COLUMN_HIDDEN, defaults.commit ? COLUMN_AUTO : COLUMN_HIDDEN, defaults.date ? COLUMN_AUTO : COLUMN_HIDDEN];
 			this.saveColumnWidths(columnWidths);
 		} else {
-			columnWidths = [cWidths[0], COLUMN_AUTO, cWidths[1], cWidths[2], cWidths[3]];
+			columnWidths = [cWidths[0], COLUMN_AUTO, cWidths[2], cWidths[3], cWidths[1]];
 		}
 
 		if (columnWidths[0] !== COLUMN_AUTO) {
@@ -1865,22 +1867,22 @@ class GitGraphView {
 			contextMenu.show([
 				[
 					{
-						title: 'Date',
+						title: 'Author',
 						visible: true,
 						checked: columnWidths[2] !== COLUMN_HIDDEN,
 						onClick: () => toggleColumnState(2, 128)
 					},
 					{
-						title: 'Author',
-						visible: true,
-						checked: columnWidths[3] !== COLUMN_HIDDEN,
-						onClick: () => toggleColumnState(3, 128)
-					},
-					{
 						title: 'Commit',
 						visible: true,
+						checked: columnWidths[3] !== COLUMN_HIDDEN,
+						onClick: () => toggleColumnState(3, 80)
+					},
+					{
+						title: 'Date',
+						visible: true,
 						checked: columnWidths[4] !== COLUMN_HIDDEN,
-						onClick: () => toggleColumnState(4, 80)
+						onClick: () => toggleColumnState(4, 128)
 					}
 				],
 				[
