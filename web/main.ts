@@ -3867,8 +3867,95 @@ function abbrevCommit(commitHash: string) {
 	return commitHash.substring(0, 8);
 }
 
+interface RepoWorktreeGroup extends DropdownOptionGroup {
+	readonly members: ReadonlyArray<string>;
+}
+
+/**
+ * Get the deepest directory that contains all of the specified paths.
+ * @param paths The paths (at least one).
+ * @returns The path of the deepest common ancestor directory.
+ */
+function getCommonAncestorPath(paths: ReadonlyArray<string>) {
+	let ancestor = paths[0].substring(0, paths[0].lastIndexOf('/'));
+	for (let i = 1; i < paths.length; i++) {
+		while (ancestor !== '' && !paths[i].startsWith(ancestor + '/')) {
+			ancestor = ancestor.substring(0, ancestor.lastIndexOf('/'));
+		}
+	}
+	return ancestor;
+}
+
+/**
+ * Group the repositories that are linked worktrees of the same main repository.
+ * @param repos The set of known repositories.
+ * @param repoPaths The sorted paths of the known repositories.
+ * @returns A record of the groups, keyed by the root of their main repository. Repositories without worktrees aren't grouped.
+ */
+function getRepoWorktreeGroups(repos: Readonly<GG.GitRepoSet>, repoPaths: ReadonlyArray<string>) {
+	const groups: { [mainRepoRoot: string]: RepoWorktreeGroup } = {};
+	if (!initialState.config.repoDropdownGroupWorktrees) return groups;
+
+	const members: { [mainRepoRoot: string]: string[] } = {};
+	let workspaceFolderIndex: number | null = null, multipleWorkspaceFolders = false;
+	for (let i = 0; i < repoPaths.length; i++) {
+		const mainRepoRoot = repos[repoPaths[i]].mainRepoRoot || repoPaths[i];
+		if (typeof members[mainRepoRoot] === 'undefined') members[mainRepoRoot] = [];
+		members[mainRepoRoot].push(repoPaths[i]);
+
+		if (i === 0) {
+			workspaceFolderIndex = repos[repoPaths[i]].workspaceFolderIndex;
+		} else if (repos[repoPaths[i]].workspaceFolderIndex !== workspaceFolderIndex) {
+			multipleWorkspaceFolders = true;
+		}
+	}
+
+	const mainRepoRoots = Object.keys(members);
+	for (let i = 0; i < mainRepoRoots.length; i++) {
+		const mainRepoRoot = mainRepoRoots[i], groupMembers = members[mainRepoRoot];
+		if (groupMembers.length < 2) continue; // A repository without worktrees is rendered as an ungrouped option
+
+		const mainRepo = repos[mainRepoRoot]; // Undefined when the main repository itself isn't a known repository
+		const basePath = getCommonAncestorPath(groupMembers);
+
+		// The folder containing every member of the group names the group better than the main repository does (e.g. "api-v2-ms-backoffice",
+		// instead of "development"), but only when it holds nothing else - otherwise the name of a folder holding many projects would be used.
+		const baseFolder = basePath + '/';
+		const baseNamesGroup = basePath !== '' && mainRepoRoot.startsWith(baseFolder) &&
+			!repoPaths.some((repoPath) => repoPath.startsWith(baseFolder) && !groupMembers.includes(repoPath));
+		const namePath = baseNamesGroup ? basePath : mainRepoRoot;
+
+		groups[mainRepoRoot] = {
+			id: mainRepoRoot,
+			name: mainRepo && mainRepo.name ? mainRepo.name : getRepoName(namePath),
+			path: namePath,
+			hint: multipleWorkspaceFolders && mainRepo && mainRepo.workspaceFolderName !== null ? mainRepo.workspaceFolderName : '',
+			members: groupMembers
+		};
+	}
+	return groups;
+}
+
 function getRepoDropdownOptions(repos: Readonly<GG.GitRepoSet>) {
-	const repoPaths = getSortedRepositoryPaths(repos, initialState.config.repoDropdownOrder);
+	const sortedRepoPaths = getSortedRepositoryPaths(repos, initialState.config.repoDropdownOrder);
+	const groups = getRepoWorktreeGroups(repos, sortedRepoPaths);
+
+	// Reorder the repositories so that the members of each group are contiguous, keeping the order in which the groups first appear
+	const repoPaths: string[] = [], groupOfPath: { [repoPath: string]: RepoWorktreeGroup } = {}, emittedGroups: { [mainRepoRoot: string]: boolean } = {};
+	for (let i = 0; i < sortedRepoPaths.length; i++) {
+		const group = groups[repos[sortedRepoPaths[i]].mainRepoRoot || sortedRepoPaths[i]];
+		if (typeof group === 'undefined') {
+			repoPaths.push(sortedRepoPaths[i]);
+			continue;
+		}
+		if (emittedGroups[group.id]) continue;
+		emittedGroups[group.id] = true;
+		for (let j = 0; j < group.members.length; j++) {
+			repoPaths.push(group.members[j]);
+			groupOfPath[group.members[j]] = group;
+		}
+	}
+
 	const paths: string[] = [], names: string[] = [], distinctNames: string[] = [], firstSep: number[] = [];
 	const resolveAmbiguous = (indexes: number[]) => {
 		// Find ambiguous names within indexes
@@ -3914,11 +4001,18 @@ function getRepoDropdownOptions(repos: Readonly<GG.GitRepoSet>) {
 	for (let i = 0; i < repoPaths.length; i++) {
 		firstSep.push(repoPaths[i].indexOf('/'));
 		const repo = repos[repoPaths[i]];
+		const group = groupOfPath[repoPaths[i]];
 		if (repo.name) {
 			// A name has been set for the repository
 			paths.push(repoPaths[i]);
 			names.push(repo.name);
 			distinctNames.push(repo.name);
+		} else if (typeof group !== 'undefined') {
+			// The repository belongs to a group, so it is named by its path relative to the root of the group (which is distinct by construction)
+			paths.push(repoPaths[i]);
+			const name = repoPaths[i].startsWith(group.path + '/') ? repoPaths[i].substring(group.path.length + 1) : getRepoName(repoPaths[i]);
+			names.push(name);
+			distinctNames.push(name);
 		} else if (firstSep[i] === repoPaths[i].length - 1 || firstSep[i] === -1) {
 			// Path has no slashes, or a single trailing slash ==> use the path as the name
 			paths.push(repoPaths[i]);
@@ -3952,7 +4046,7 @@ function getRepoDropdownOptions(repos: Readonly<GG.GitRepoSet>) {
 			// Construct the hint
 			hint = (distinctNames[i] !== paths[i] ? '.../' : '') + hintComps.join('/');
 		}
-		options.push({ name: names[i], value: repoPaths[i], hint: hint });
+		options.push({ name: names[i], value: repoPaths[i], hint: hint, group: groupOfPath[repoPaths[i]] });
 	}
 	return options;
 }

@@ -92,6 +92,26 @@ body.vscode-high-contrast .dropdownOption:hover{
 	outline:1px dotted var(--vscode-menu-selectionBorder, transparent);
 	outline-offset:-2px;
 }
+.dropdownOptionGroupHeader{
+	position:relative;
+	cursor:default;
+	font-weight:bold;
+	padding:4px 10px;
+	-webkit-user-select:none;
+	user-select:none;
+	text-overflow:ellipsis;
+	white-space:nowrap;
+	overflow:hidden;
+}
+.dropdownOptions.showInfo .dropdownOptionGroupHeader{
+	padding-right:30px;
+}
+.dropdownOption.grouped{
+	padding-left:22px;
+}
+.dropdown.multi .dropdownOption.grouped{
+	padding-left:48px;
+}
 .dropdownOptionHint{
 	opacity:0.6;
 	margin-left:8px;

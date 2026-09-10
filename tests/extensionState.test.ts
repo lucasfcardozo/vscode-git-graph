@@ -66,6 +66,7 @@ describe('ExtensionState', () => {
 				includeCommitsMentionedByReflogs: BooleanOverride.Enabled,
 				issueLinkingConfig: null,
 				lastImportAt: 0,
+				mainRepoRoot: null,
 				name: 'Custom Name',
 				onlyFollowFirstParent: BooleanOverride.Disabled,
 				onRepoLoadShowCheckedOutBranch: BooleanOverride.Enabled,
@@ -75,7 +76,8 @@ describe('ExtensionState', () => {
 				showRemoteBranchesV2: BooleanOverride.Enabled,
 				showStashes: BooleanOverride.Enabled,
 				showTags: BooleanOverride.Enabled,
-				workspaceFolderIndex: 0
+				workspaceFolderIndex: 0,
+				workspaceFolderName: null
 			};
 			extensionContext.workspaceState.get.mockReturnValueOnce({
 				'/path/to/repo': repoState
@@ -114,6 +116,7 @@ describe('ExtensionState', () => {
 					includeCommitsMentionedByReflogs: BooleanOverride.Default,
 					issueLinkingConfig: null,
 					lastImportAt: 0,
+					mainRepoRoot: null,
 					name: null,
 					onlyFollowFirstParent: BooleanOverride.Default,
 					onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -123,7 +126,8 @@ describe('ExtensionState', () => {
 					showRemoteBranchesV2: BooleanOverride.Default,
 					showStashes: BooleanOverride.Default,
 					showTags: BooleanOverride.Default,
-					workspaceFolderIndex: null
+					workspaceFolderIndex: null,
+					workspaceFolderName: null
 				}
 			});
 		});
@@ -152,6 +156,7 @@ describe('ExtensionState', () => {
 					includeCommitsMentionedByReflogs: BooleanOverride.Default,
 					issueLinkingConfig: null,
 					lastImportAt: 0,
+					mainRepoRoot: null,
 					name: null,
 					onlyFollowFirstParent: BooleanOverride.Default,
 					onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -161,7 +166,8 @@ describe('ExtensionState', () => {
 					showRemoteBranchesV2: BooleanOverride.Default,
 					showStashes: BooleanOverride.Default,
 					showTags: BooleanOverride.Default,
-					workspaceFolderIndex: null
+					workspaceFolderIndex: null,
+					workspaceFolderName: null
 				}
 			});
 		});
@@ -190,6 +196,7 @@ describe('ExtensionState', () => {
 					includeCommitsMentionedByReflogs: BooleanOverride.Default,
 					issueLinkingConfig: null,
 					lastImportAt: 0,
+					mainRepoRoot: null,
 					name: null,
 					onlyFollowFirstParent: BooleanOverride.Default,
 					onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -199,7 +206,8 @@ describe('ExtensionState', () => {
 					showRemoteBranchesV2: BooleanOverride.Disabled,
 					showStashes: BooleanOverride.Default,
 					showTags: BooleanOverride.Default,
-					workspaceFolderIndex: null
+					workspaceFolderIndex: null,
+					workspaceFolderName: null
 				}
 			});
 		});
@@ -228,6 +236,7 @@ describe('ExtensionState', () => {
 					includeCommitsMentionedByReflogs: BooleanOverride.Default,
 					issueLinkingConfig: null,
 					lastImportAt: 0,
+					mainRepoRoot: null,
 					name: null,
 					onlyFollowFirstParent: BooleanOverride.Default,
 					onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -237,7 +246,8 @@ describe('ExtensionState', () => {
 					showRemoteBranchesV2: BooleanOverride.Default,
 					showStashes: BooleanOverride.Default,
 					showTags: BooleanOverride.Default,
-					workspaceFolderIndex: null
+					workspaceFolderIndex: null,
+					workspaceFolderName: null
 				}
 			});
 		});
@@ -266,6 +276,7 @@ describe('ExtensionState', () => {
 					includeCommitsMentionedByReflogs: BooleanOverride.Default,
 					issueLinkingConfig: null,
 					lastImportAt: 0,
+					mainRepoRoot: null,
 					name: null,
 					onlyFollowFirstParent: BooleanOverride.Default,
 					onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -275,7 +286,8 @@ describe('ExtensionState', () => {
 					showRemoteBranchesV2: BooleanOverride.Enabled,
 					showStashes: BooleanOverride.Default,
 					showTags: BooleanOverride.Default,
-					workspaceFolderIndex: null
+					workspaceFolderIndex: null,
+					workspaceFolderName: null
 				}
 			});
 		});
@@ -307,6 +319,7 @@ describe('ExtensionState', () => {
 					includeCommitsMentionedByReflogs: BooleanOverride.Default,
 					issueLinkingConfig: null,
 					lastImportAt: 0,
+					mainRepoRoot: null,
 					name: null,
 					onlyFollowFirstParent: BooleanOverride.Default,
 					onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -316,7 +329,8 @@ describe('ExtensionState', () => {
 					showRemoteBranchesV2: BooleanOverride.Default,
 					showStashes: BooleanOverride.Default,
 					showTags: BooleanOverride.Default,
-					workspaceFolderIndex: null
+					workspaceFolderIndex: null,
+					workspaceFolderName: null
 				},
 				'/path/to/repo-2': {
 					cdvDivider: 0.5,
@@ -328,6 +342,7 @@ describe('ExtensionState', () => {
 					includeCommitsMentionedByReflogs: BooleanOverride.Default,
 					issueLinkingConfig: null,
 					lastImportAt: 0,
+					mainRepoRoot: null,
 					name: null,
 					onlyFollowFirstParent: BooleanOverride.Default,
 					onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -337,7 +352,8 @@ describe('ExtensionState', () => {
 					showRemoteBranchesV2: BooleanOverride.Disabled,
 					showStashes: BooleanOverride.Default,
 					showTags: BooleanOverride.Default,
-					workspaceFolderIndex: null
+					workspaceFolderIndex: null,
+					workspaceFolderName: null
 				}
 			});
 			expect(workspaceConfiguration.get).toHaveBeenCalledTimes(1);

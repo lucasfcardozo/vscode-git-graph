@@ -1,7 +1,7 @@
 {
 	"name": "git-graph-plus",
 	"displayName": "Git Graph Plus",
-	"version": "1.30.0-alpha12",
+	"version": "1.30.0-alpha14",
 	"publisher": "carica",
 	"author": {
 		"name": "Michael Hutchison",
@@ -1126,6 +1126,11 @@
 					"type": "boolean",
 					"default": false,
 					"markdownDescription": "Respect [.mailmap](https://git-scm.com/docs/git-check-mailmap#_mapping_authors) files when displaying author & committer names and email addresses."
+				},
+				"git-graph-plus.repositoryDropdownGroupWorktrees": {
+					"type": "boolean",
+					"default": true,
+					"description": "Group the linked worktrees of a repository underneath a heading for the main repository, in the repository dropdown on the Git Graph View."
 				},
 				"git-graph-plus.repositoryDropdownOrder": {
 					"type": "string",

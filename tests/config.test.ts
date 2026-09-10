@@ -2824,6 +2824,44 @@ describe('Config', () => {
 
 	describe('useMailmap', testRenamedBooleanExtensionSetting('useMailmap', 'repository.useMailmap', 'useMailmap', false));
 
+	describe('repoDropdownGroupWorktrees', () => {
+		it('Should return TRUE when the configuration value is TRUE', () => {
+			// Setup
+			vscode.mockExtensionSettingReturnValue('repositoryDropdownGroupWorktrees', true);
+
+			// Run
+			const value = config.repoDropdownGroupWorktrees;
+
+			// Assert
+			expect(workspaceConfiguration.get).toBeCalledWith('repositoryDropdownGroupWorktrees', true);
+			expect(value).toBe(true);
+		});
+
+		it('Should return FALSE when the configuration value is FALSE', () => {
+			// Setup
+			vscode.mockExtensionSettingReturnValue('repositoryDropdownGroupWorktrees', false);
+
+			// Run
+			const value = config.repoDropdownGroupWorktrees;
+
+			// Assert
+			expect(workspaceConfiguration.get).toBeCalledWith('repositoryDropdownGroupWorktrees', true);
+			expect(value).toBe(false);
+		});
+
+		it('Should return the default value (TRUE) when the configuration value is not set', () => {
+			// Setup
+			vscode.mockExtensionSettingReturnValue('repositoryDropdownGroupWorktrees', undefined);
+
+			// Run
+			const value = config.repoDropdownGroupWorktrees;
+
+			// Assert
+			expect(workspaceConfiguration.get).toBeCalledWith('repositoryDropdownGroupWorktrees', true);
+			expect(value).toBe(true);
+		});
+	});
+
 	describe('repoDropdownOrder', () => {
 		it('Should return RepoDropdownOrder.Name when the configuration value is "Name"', () => {
 			// Setup

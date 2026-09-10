@@ -1,7 +1,15 @@
+interface DropdownOptionGroup {
+	readonly id: string;
+	readonly name: string;
+	readonly path: string;
+	readonly hint?: string;
+}
+
 interface DropdownOption {
 	readonly name: string;
 	readonly value: string;
 	readonly hint?: string;
+	readonly group?: DropdownOptionGroup;
 }
 
 /**
@@ -14,6 +22,8 @@ class Dropdown {
 
 	private options: ReadonlyArray<DropdownOption> = [];
 	private optionsSelected: boolean[] = [];
+	private optionElems: HTMLElement[] = [];
+	private groupElems: { [id: string]: HTMLElement } = {};
 	private lastSelected: number = 0; // Only used when multipleAllowed === false
 	private dropdownVisible: boolean = false;
 	private lastClicked: number = 0;
@@ -221,10 +231,19 @@ class Dropdown {
 		this.currentValueElem.title = curValueText;
 		this.currentValueElem.innerHTML = escapeHtml(curValueText);
 
-		let html = '';
+		let html = '', prevGroupId: string | null = null;
 		for (let i = 0; i < this.options.length; i++) {
+			const group = this.options[i].group;
+			if (typeof group !== 'undefined' && group.id !== prevGroupId) {
+				// The first option of a group is preceded by a heading, which isn't selectable (it has no data-id).
+				html += '<div class="dropdownOptionGroupHeader" data-group="' + escapeHtml(group.id) + '" title="' + escapeHtml(group.path) + '">' +
+					escapeHtml(group.name) + (typeof group.hint === 'string' && group.hint !== '' ? '<span class="dropdownOptionHint">' + escapeHtml(group.hint) + '</span>' : '') +
+					'</div>';
+			}
+			prevGroupId = typeof group !== 'undefined' ? group.id : null;
+
 			const escapedName = escapeHtml(this.options[i].name);
-			html += '<div class="dropdownOption' + (this.optionsSelected[i] ? ' ' + CLASS_SELECTED : '') + '" data-id="' + i + '" title="' + escapedName + '">' +
+			html += '<div class="dropdownOption' + (this.optionsSelected[i] ? ' ' + CLASS_SELECTED : '') + (typeof group !== 'undefined' ? ' grouped' : '') + '" data-id="' + i + '" title="' + escapedName + '">' +
 				(this.multipleAllowed && this.optionsSelected[i] ? '<div class="dropdownOptionMultiSelected">' + SVG_ICONS.check + '</div>' : '') +
 				escapedName + (typeof this.options[i].hint === 'string' && this.options[i].hint !== '' ? '<span class="dropdownOptionHint">' + escapeHtml(this.options[i].hint!) + '</span>' : '') +
 				(this.showInfo ? '<div class="dropdownOptionInfo" title="' + escapeHtml(this.options[i].value) + '">' + SVG_ICONS.info + '</div>' : '') +
@@ -232,6 +251,18 @@ class Dropdown {
 		}
 		this.optionsElem.className = 'dropdownOptions' + (this.showInfo ? ' showInfo' : '');
 		this.optionsElem.innerHTML = html;
+
+		this.optionElems = [];
+		this.groupElems = {};
+		for (let i = 0; i < this.optionsElem.children.length; i++) {
+			const child = <HTMLElement>this.optionsElem.children[i];
+			if (typeof child.dataset.id !== 'undefined') {
+				this.optionElems[parseInt(child.dataset.id)] = child;
+			} else if (typeof child.dataset.group !== 'undefined') {
+				this.groupElems[child.dataset.group] = child;
+			}
+		}
+
 		this.filterInput.style.display = 'none';
 		this.noResultsElem.style.display = 'none';
 		this.menuElem.style.cssText = 'opacity:0; display:block;';
@@ -247,11 +278,25 @@ class Dropdown {
 	 * Filter the options displayed in the dropdown list, based on the filter criteria specified by the user.
 	 */
 	private filter() {
-		let val = this.filterInput.value.toLowerCase(), match, matches = false;
+		const val = this.filterInput.value.toLowerCase();
+		const groupMatches: { [id: string]: boolean } = {};
+		let match, matches = false;
 		for (let i = 0; i < this.options.length; i++) {
-			match = this.options[i].name.toLowerCase().indexOf(val) > -1;
-			(<HTMLElement>this.optionsElem.children[i]).style.display = match ? 'block' : 'none';
-			if (match) matches = true;
+			const option = this.options[i];
+			// The value is included in the filter criteria, so a repository can be found by its full path (and not only by its abbreviated name).
+			match = option.name.toLowerCase().indexOf(val) > -1 ||
+				option.value.toLowerCase().indexOf(val) > -1 ||
+				(typeof option.hint === 'string' && option.hint.toLowerCase().indexOf(val) > -1) ||
+				(typeof option.group !== 'undefined' && option.group.name.toLowerCase().indexOf(val) > -1);
+			this.optionElems[i].style.display = match ? 'block' : 'none';
+			if (!match) continue;
+			if (typeof option.group !== 'undefined') groupMatches[option.group.id] = true;
+			matches = true;
+		}
+
+		const groupIds = Object.keys(this.groupElems);
+		for (let i = 0; i < groupIds.length; i++) {
+			this.groupElems[groupIds[i]].style.display = groupMatches[groupIds[i]] ? 'block' : 'none';
 		}
 		this.filterInput.style.display = 'block';
 		this.noResultsElem.style.display = matches ? 'none' : 'block';

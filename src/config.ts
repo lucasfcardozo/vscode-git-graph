@@ -535,6 +535,13 @@ class Config {
 	}
 
 	/**
+	 * Get the value of the `git-graph-plus.repositoryDropdownGroupWorktrees` Extension Setting.
+	 */
+	get repoDropdownGroupWorktrees() {
+		return !!this.config.get('repositoryDropdownGroupWorktrees', true);
+	}
+
+	/**
 	 * Get the value of the `git-graph-plus.repositoryDropdownOrder` Extension Setting.
 	 */
 	get repoDropdownOrder(): RepoDropdownOrder {

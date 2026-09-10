@@ -217,6 +217,7 @@ export interface GitRepoState {
 	includeCommitsMentionedByReflogs: BooleanOverride;
 	issueLinkingConfig: IssueLinkingConfig | null;
 	lastImportAt: number;
+	mainRepoRoot: string | null;
 	name: string | null;
 	onlyFollowFirstParent: BooleanOverride;
 	onRepoLoadShowCheckedOutBranch: BooleanOverride;
@@ -227,6 +228,7 @@ export interface GitRepoState {
 	showStashes: BooleanOverride;
 	showTags: BooleanOverride;
 	workspaceFolderIndex: number | null;
+	workspaceFolderName: string | null;
 }
 
 
@@ -267,6 +269,7 @@ export interface GitGraphViewConfig {
 	readonly onlyFollowFirstParent: boolean;
 	readonly onRepoLoad: OnRepoLoadConfig;
 	readonly referenceLabels: ReferenceLabelsConfig;
+	readonly repoDropdownGroupWorktrees: boolean;
 	readonly repoDropdownOrder: RepoDropdownOrder;
 	readonly showRemoteBranches: boolean;
 	readonly showStashes: boolean;

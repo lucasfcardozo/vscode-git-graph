@@ -635,6 +635,20 @@ export class DataSource extends Disposable {
 		}).catch(() => null); // null => path is not in a repo
 	}
 
+	/**
+	 * Get the root of the main repository, if the specified repository is a linked worktree.
+	 * @param repo The path of the repository.
+	 * @returns STRING => The root of the main repository, NULL => `repo` is not a linked worktree.
+	 */
+	public worktreeMainRoot(repo: string) {
+		return this.spawnGit(['rev-parse', '--git-common-dir'], repo, (stdout) => stdout.trim()).then((commonDir) => {
+			// Git returns a relative path (".git") when run in the main repository, and an absolute path when run in a linked worktree.
+			const absoluteCommonDir = getPathFromUri(vscode.Uri.file(path.resolve(repo, commonDir)));
+			const mainRoot = absoluteCommonDir.substring(0, absoluteCommonDir.lastIndexOf('/'));
+			return mainRoot !== '' && mainRoot !== repo ? mainRoot : null;
+		}).catch(() => null);
+	}
+
 
 	/* Git Action Methods - Remotes */
 

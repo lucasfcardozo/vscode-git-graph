@@ -27,6 +27,7 @@ export const DEFAULT_REPO_STATE: GitRepoState = {
 	includeCommitsMentionedByReflogs: BooleanOverride.Default,
 	issueLinkingConfig: null,
 	lastImportAt: 0,
+	mainRepoRoot: null,
 	name: null,
 	onlyFollowFirstParent: BooleanOverride.Default,
 	onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -36,7 +37,8 @@ export const DEFAULT_REPO_STATE: GitRepoState = {
 	showRemoteBranchesV2: BooleanOverride.Default,
 	showStashes: BooleanOverride.Default,
 	showTags: BooleanOverride.Default,
-	workspaceFolderIndex: null
+	workspaceFolderIndex: null,
+	workspaceFolderName: null
 };
 
 const DEFAULT_GIT_GRAPH_VIEW_GLOBAL_STATE: GitGraphViewGlobalState = {

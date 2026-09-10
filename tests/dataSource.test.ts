@@ -4414,6 +4414,42 @@ describe('DataSource', () => {
 		});
 	});
 
+	describe('worktreeMainRoot', () => {
+		it('Should return the root of the main repository when called from a linked worktree', async () => {
+			// Setup
+			mockGitSuccessOnce('/path/to/repo/main/.git');
+
+			// Run
+			const result = await dataSource.worktreeMainRoot('/path/to/repo/feature');
+
+			// Assert
+			expect(result).toBe('/path/to/repo/main');
+			expect(spyOnSpawn).toBeCalledWith('/path/to/git', ['rev-parse', '--git-common-dir'], expect.objectContaining({ cwd: '/path/to/repo/feature' }));
+		});
+
+		it('Should resolve the relative common directory returned when called from the main repository', async () => {
+			// Setup
+			mockGitSuccessOnce('.git');
+
+			// Run
+			const result = await dataSource.worktreeMainRoot('/path/to/repo/main');
+
+			// Assert
+			expect(result).toBe(null);
+		});
+
+		it('Should return NULL when git threw an error', async () => {
+			// Setup
+			mockGitThrowingErrorOnce();
+
+			// Run
+			const result = await dataSource.worktreeMainRoot('/path/to/repo/main');
+
+			// Assert
+			expect(result).toBe(null);
+		});
+	});
+
 	describe('addRemote', () => {
 		it('Should add a remote', async () => {
 			// Setup

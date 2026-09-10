@@ -156,7 +156,9 @@ export class RepoManager extends Disposable {
 		if (this.updateReposWorkspaceFolderIndex()) {
 			this.extensionState.saveRepos(this.repos);
 		}
-		if (!await this.checkReposExist()) {
+		const reposChanged = await this.checkReposExist();
+		const worktreesChanged = await this.updateReposWorktreeInfo();
+		if (!reposChanged && !worktreesChanged) {
 			// On startup, ensure that sendRepo is called (even if no changes were made)
 			this.sendRepos();
 		}
@@ -309,6 +311,7 @@ export class RepoManager extends Disposable {
 			return false;
 		} else {
 			this.repos[repo] = Object.assign({}, DEFAULT_REPO_STATE);
+			this.repos[repo].mainRepoRoot = await this.dataSource.worktreeMainRoot(repo);
 			this.updateReposWorkspaceFolderIndex(repo);
 			this.extensionState.saveRepos(this.repos);
 			this.logger.log('Added new repo: ' + repo);
@@ -391,6 +394,30 @@ export class RepoManager extends Disposable {
 	}
 
 	/**
+	 * Resolve the main repository root of each known repository that is a linked worktree.
+	 * Resolved on every startup (instead of being cached indefinitely), so worktrees created or
+	 * removed outside of Visual Studio Code are reflected in the Git Graph View.
+	 * @returns TRUE => At least one repository was changed, FALSE => No repositories were changed.
+	 */
+	private updateReposWorktreeInfo() {
+		const repoPaths = Object.keys(this.repos);
+		let changes = false;
+		return evalPromises(repoPaths, 3, (path) => this.dataSource.worktreeMainRoot(path)).then((results) => {
+			for (let i = 0; i < repoPaths.length; i++) {
+				if (typeof this.repos[repoPaths[i]] === 'undefined' || this.repos[repoPaths[i]].mainRepoRoot === results[i]) continue;
+				this.repos[repoPaths[i]].mainRepoRoot = results[i];
+				changes = true;
+			}
+		}).catch(() => { }).then(() => {
+			if (changes) {
+				this.extensionState.saveRepos(this.repos);
+				this.sendRepos();
+			}
+			return changes;
+		});
+	}
+
+	/**
 	 * Update each repositories workspaceFolderIndex based on the current workspace.
 	 * @param repo If provided, only update this specific repository.
 	 * @returns TRUE => At least one repository was changed, FALSE => No repositories were changed.
@@ -399,7 +426,7 @@ export class RepoManager extends Disposable {
 		const workspaceFolderInfo = getWorkspaceFolderInfoForRepoInclusionMapping();
 		const rootsExact = workspaceFolderInfo.rootsExact, rootsFolder = workspaceFolderInfo.rootsFolder, workspaceFolders = workspaceFolderInfo.workspaceFolders;
 		const repoPaths = repo !== null && this.isKnownRepo(repo) ? [repo] : Object.keys(this.repos);
-		let changes = false, rootIndex: number, workspaceFolderIndex: number | null;
+		let changes = false, rootIndex: number, workspaceFolderIndex: number | null, workspaceFolderName: string | null;
 		for (let i = 0; i < repoPaths.length; i++) {
 			rootIndex = rootsExact.indexOf(repoPaths[i]);
 			if (rootIndex === -1) {
@@ -412,8 +439,13 @@ export class RepoManager extends Disposable {
 				rootIndex = rootsExact.findIndex((root) => root.startsWith(repoPathFolder));
 			}
 			workspaceFolderIndex = rootIndex > -1 ? workspaceFolders[rootIndex].index : null;
+			workspaceFolderName = rootIndex > -1 ? workspaceFolders[rootIndex].name || null : null;
 			if (this.repos[repoPaths[i]].workspaceFolderIndex !== workspaceFolderIndex) {
 				this.repos[repoPaths[i]].workspaceFolderIndex = workspaceFolderIndex;
+				changes = true;
+			}
+			if (this.repos[repoPaths[i]].workspaceFolderName !== workspaceFolderName) {
+				this.repos[repoPaths[i]].workspaceFolderName = workspaceFolderName;
 				changes = true;
 			}
 		}

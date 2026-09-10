@@ -26,7 +26,7 @@ let onDidChangeGitExecutable: EventEmitter<utils.GitExecutable>;
 let logger: Logger;
 let dataSource: DataSource;
 let extensionState: ExtensionState;
-let spyOnGetRepos: jest.SpyInstance, spyOnGetIgnoredRepos: jest.SpyInstance, spyOnSetIgnoredRepos: jest.SpyInstance, spyOnSaveRepos: jest.SpyInstance, spyOnTransferRepo: jest.SpyInstance, spyOnRepoRoot: jest.SpyInstance, spyOnGetSubmodules: jest.SpyInstance, spyOnLog: jest.SpyInstance, spyOnMkdir: jest.SpyInstance, spyOnReaddir: jest.SpyInstance, spyOnReadFile: jest.SpyInstance, spyOnStat: jest.SpyInstance, spyOnWriteFile: jest.SpyInstance;
+let spyOnGetRepos: jest.SpyInstance, spyOnGetIgnoredRepos: jest.SpyInstance, spyOnSetIgnoredRepos: jest.SpyInstance, spyOnSaveRepos: jest.SpyInstance, spyOnTransferRepo: jest.SpyInstance, spyOnRepoRoot: jest.SpyInstance, spyOnWorktreeMainRoot: jest.SpyInstance, spyOnGetSubmodules: jest.SpyInstance, spyOnLog: jest.SpyInstance, spyOnMkdir: jest.SpyInstance, spyOnReaddir: jest.SpyInstance, spyOnReadFile: jest.SpyInstance, spyOnStat: jest.SpyInstance, spyOnWriteFile: jest.SpyInstance;
 
 beforeAll(() => {
 	onDidChangeConfiguration = new EventEmitter<ConfigurationChangeEvent>();
@@ -40,6 +40,7 @@ beforeAll(() => {
 	spyOnSaveRepos = jest.spyOn(extensionState, 'saveRepos');
 	spyOnTransferRepo = jest.spyOn(extensionState, 'transferRepo');
 	spyOnRepoRoot = jest.spyOn(dataSource, 'repoRoot');
+	spyOnWorktreeMainRoot = jest.spyOn(dataSource, 'worktreeMainRoot');
 	spyOnGetSubmodules = jest.spyOn(dataSource, 'getSubmodules');
 	spyOnLog = jest.spyOn(logger, 'log');
 	spyOnMkdir = jest.spyOn(fs, 'mkdir');
@@ -47,6 +48,8 @@ beforeAll(() => {
 	spyOnReadFile = jest.spyOn(fs, 'readFile');
 	spyOnStat = jest.spyOn(fs, 'stat');
 	spyOnWriteFile = jest.spyOn(fs, 'writeFile');
+
+	spyOnWorktreeMainRoot.mockResolvedValue(null);
 
 	spyOnReadFile.mockImplementation((_: string, callback: (err: NodeJS.ErrnoException | null, data: Buffer) => void) => {
 		callback(new Error(), Buffer.alloc(0));
@@ -115,6 +118,29 @@ describe('RepoManager', () => {
 			]);
 			expect(spyOnLog).toHaveBeenCalledWith('Added new repo: /path/to/workspace-folder1');
 			expect(vscode.workspace.createFileSystemWatcher).toHaveBeenCalledWith('/path/to/workspace-folder1/**');
+
+			// Teardown
+			repoManager.dispose();
+		});
+
+		it('Should record the name of the workspace folder that contains an added repository', async () => {
+			// Setup
+			let emitOnDidChangeWorkspaceFolders: (event: { added: { uri: vscode.Uri }[], removed: { uri: vscode.Uri }[] }) => Promise<void>;
+			vscode.workspace.onDidChangeWorkspaceFolders.mockImplementationOnce((listener) => {
+				emitOnDidChangeWorkspaceFolders = listener as () => Promise<void>;
+				return { dispose: jest.fn() };
+			});
+			const repoManager = await constructRepoManagerAndWaitUntilStarted([], []);
+			mockRepositoryWithNoSubmodules();
+
+			// Run
+			vscode.workspace.workspaceFolders = [{ uri: vscode.Uri.file('/path/to/workspace-folder1'), index: 0, name: 'Backoffice' } as any];
+			await emitOnDidChangeWorkspaceFolders!({ added: [{ uri: vscode.Uri.file('/path/to/workspace-folder1') }], removed: [] });
+
+			// Assert
+			expect(repoManager.getRepos()).toStrictEqual({
+				'/path/to/workspace-folder1': mockRepoState({ workspaceFolderIndex: 0, workspaceFolderName: 'Backoffice' })
+			});
 
 			// Teardown
 			repoManager.dispose();
@@ -441,6 +467,34 @@ describe('RepoManager', () => {
 
 			// Run
 			repoManager.dispose();
+		});
+
+		it('Should resolve the main repository root of the repositories that are linked worktrees', async () => {
+			// Setup
+			mockRepositoryWithNoSubmodules();
+			mockRepositoryWithNoSubmodules();
+			mockDirectoryThatsNotRepository();
+			spyOnWorktreeMainRoot.mockImplementation((repo: string) => Promise.resolve(repo === '/path/to/workspace-folder1/feature' ? '/path/to/workspace-folder1/main' : null));
+
+			// Run
+			const repoManager = await constructRepoManagerAndWaitUntilStarted(
+				['/path/to/workspace-folder1'],
+				['/path/to/workspace-folder1/main', '/path/to/workspace-folder1/feature']
+			);
+
+			// Assert
+			const expectedRepos = {
+				'/path/to/workspace-folder1/main': mockRepoState({ workspaceFolderIndex: 0 }),
+				'/path/to/workspace-folder1/feature': mockRepoState({ workspaceFolderIndex: 0, mainRepoRoot: '/path/to/workspace-folder1/main' })
+			};
+			expect(repoManager.getRepos()).toStrictEqual(expectedRepos);
+			expect(spyOnWorktreeMainRoot).toHaveBeenCalledWith('/path/to/workspace-folder1/main');
+			expect(spyOnWorktreeMainRoot).toHaveBeenCalledWith('/path/to/workspace-folder1/feature');
+			expect(spyOnSaveRepos).toHaveBeenCalledWith(expectedRepos);
+
+			// Teardown
+			repoManager.dispose();
+			spyOnWorktreeMainRoot.mockResolvedValue(null);
 		});
 
 		it('Should run startup tasks (doesn\'t call saveRepos when updateReposWorkspaceFolderIndex doesn\'t make changes)', async () => {
@@ -1232,6 +1286,7 @@ describe('RepoManager', () => {
 				includeCommitsMentionedByReflogs: BooleanOverride.Default,
 				issueLinkingConfig: null,
 				lastImportAt: 0,
+				mainRepoRoot: null,
 				name: null,
 				onlyFollowFirstParent: BooleanOverride.Default,
 				onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -1241,7 +1296,8 @@ describe('RepoManager', () => {
 				showRemoteBranchesV2: BooleanOverride.Default,
 				showStashes: BooleanOverride.Default,
 				showTags: BooleanOverride.Default,
-				workspaceFolderIndex: 0
+				workspaceFolderIndex: 0,
+				workspaceFolderName: null
 			};
 
 			// Run
@@ -1901,6 +1957,7 @@ describe('RepoManager', () => {
 						includeCommitsMentionedByReflogs: BooleanOverride.Default,
 						issueLinkingConfig: null,
 						lastImportAt: 1587559258000,
+						mainRepoRoot: null,
 						name: null,
 						onlyFollowFirstParent: BooleanOverride.Default,
 						onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -1910,7 +1967,8 @@ describe('RepoManager', () => {
 						showRemoteBranchesV2: BooleanOverride.Default,
 						showStashes: BooleanOverride.Default,
 						showTags: BooleanOverride.Default,
-						workspaceFolderIndex: 0
+						workspaceFolderIndex: 0,
+						workspaceFolderName: null
 					}
 				};
 				expected['/path/to/workspace-folder1/repo'][stateKey] = stateValue;
@@ -2254,6 +2312,7 @@ describe('RepoManager', () => {
 					includeCommitsMentionedByReflogs: BooleanOverride.Default,
 					issueLinkingConfig: null,
 					lastImportAt: 1587559258000,
+					mainRepoRoot: null,
 					name: null,
 					onlyFollowFirstParent: BooleanOverride.Default,
 					onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -2263,7 +2322,8 @@ describe('RepoManager', () => {
 					showRemoteBranchesV2: BooleanOverride.Default,
 					showStashes: BooleanOverride.Default,
 					showTags: BooleanOverride.Default,
-					workspaceFolderIndex: 0
+					workspaceFolderIndex: 0,
+					workspaceFolderName: null
 				}
 			});
 
@@ -2332,6 +2392,7 @@ describe('RepoManager', () => {
 					includeCommitsMentionedByReflogs: BooleanOverride.Default,
 					issueLinkingConfig: null,
 					lastImportAt: 1587559258000,
+					mainRepoRoot: null,
 					name: null,
 					onlyFollowFirstParent: BooleanOverride.Default,
 					onRepoLoadShowCheckedOutBranch: BooleanOverride.Default,
@@ -2341,7 +2402,8 @@ describe('RepoManager', () => {
 					showRemoteBranchesV2: BooleanOverride.Default,
 					showStashes: BooleanOverride.Default,
 					showTags: BooleanOverride.Default,
-					workspaceFolderIndex: 0
+					workspaceFolderIndex: 0,
+					workspaceFolderName: null
 				}
 			});
 
